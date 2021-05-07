@@ -4,10 +4,12 @@ import (
 	"github.com/labstack/echo/v4"
 
 	forumModels "github.com/forums/internal/forum"
+	custMiddleware "github.com/forums/internal/middleware"
 	postModels "github.com/forums/internal/post"
 	serviceModels "github.com/forums/internal/service"
 	threadModels "github.com/forums/internal/thread"
 	userModels "github.com/forums/internal/user"
+	"github.com/forums/utils/logger"
 
 	forumDelivery "github.com/forums/internal/forum/delivery"
 	postDelivery "github.com/forums/internal/post/delivery"
@@ -55,7 +57,10 @@ func router(h Handler) {
 }
 
 func main() {
+	logger.InitLogger()
+
 	e := echo.New()
+	e.Use(custMiddleware.LogMiddleware)
 
 	userHandler := userDelivery.NewUserHandler()
 	forumHandler := forumDelivery.NewForumHandler()
