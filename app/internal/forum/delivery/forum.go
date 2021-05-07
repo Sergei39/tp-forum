@@ -3,7 +3,7 @@ package delivery
 import (
 	"net/http"
 
-	forumModel "github.com/forums/internal/forum"
+	forumModel "github.com/forums/app/internal/forum"
 	"github.com/labstack/echo/v4"
 )
 

@@ -3,7 +3,7 @@ package delivery
 import (
 	"net/http"
 
-	serviceModel "github.com/forums/internal/service"
+	serviceModel "github.com/forums/app/internal/service"
 	"github.com/labstack/echo/v4"
 )
 

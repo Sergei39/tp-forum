@@ -1,21 +1,32 @@
 package main
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+
 	"github.com/labstack/echo/v4"
 
-	forumModels "github.com/forums/internal/forum"
-	custMiddleware "github.com/forums/internal/middleware"
-	postModels "github.com/forums/internal/post"
-	serviceModels "github.com/forums/internal/service"
-	threadModels "github.com/forums/internal/thread"
-	userModels "github.com/forums/internal/user"
+	"github.com/forums/app/config"
+	forumModels "github.com/forums/app/internal/forum"
+	postModels "github.com/forums/app/internal/post"
+	serviceModels "github.com/forums/app/internal/service"
+	threadModels "github.com/forums/app/internal/thread"
+	userModels "github.com/forums/app/internal/user"
+	custMiddleware "github.com/forums/app/middleware"
 	"github.com/forums/utils/logger"
 
-	forumDelivery "github.com/forums/internal/forum/delivery"
-	postDelivery "github.com/forums/internal/post/delivery"
-	serviceDelivery "github.com/forums/internal/service/delivery"
-	threadDelivery "github.com/forums/internal/thread/delivery"
-	userDelivery "github.com/forums/internal/user/delivery"
+	userRepository "github.com/forums/app/internal/user/repository"
+
+	userUsecase "github.com/forums/app/internal/user/usecase"
+
+	forumDelivery "github.com/forums/app/internal/forum/delivery"
+	postDelivery "github.com/forums/app/internal/post/delivery"
+	serviceDelivery "github.com/forums/app/internal/service/delivery"
+	threadDelivery "github.com/forums/app/internal/thread/delivery"
+	userDelivery "github.com/forums/app/internal/user/delivery"
+
+	_ "github.com/lib/pq"
 )
 
 type Handler struct {
@@ -29,9 +40,9 @@ type Handler struct {
 
 func router(h Handler) {
 	userGroup := h.echo.Group("/user")
-	userGroup.POST("/:username/create", h.user.CreateUser)
-	userGroup.GET("/:username/profile", h.user.GetUser)
-	userGroup.POST("/:username/profile", h.user.UpdateUser)
+	userGroup.POST("/:nickname/create", h.user.CreateUser)
+	userGroup.GET("/:nickname/profile", h.user.GetUser)
+	userGroup.POST("/:nickname/profile", h.user.UpdateUser)
 
 	forumGroup := h.echo.Group("/forum")
 	forumGroup.POST("/create", h.forum.CreateForum)
@@ -58,11 +69,30 @@ func router(h Handler) {
 
 func main() {
 	logger.InitLogger()
+	ctx := context.Background()
 
 	e := echo.New()
 	e.Use(custMiddleware.LogMiddleware)
 
-	userHandler := userDelivery.NewUserHandler()
+	dsn := fmt.Sprintf("user=%s password=%s dbname=%s", config.DBUser, config.DBPass, config.DBName)
+	db, err := sql.Open(config.PostgresDB, dsn)
+	if err != nil {
+		logger.Start().Fatal(ctx, err)
+	}
+
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(3)
+
+	err = db.Ping()
+	if err != nil {
+		logger.Start().Fatal(ctx, err)
+	}
+
+	userRepo := userRepository.NewUserRepo(db)
+
+	userUcase := userUsecase.NewUserUsecase(userRepo)
+
+	userHandler := userDelivery.NewUserHandler(userUcase)
 	forumHandler := forumDelivery.NewForumHandler()
 	postHandler := postDelivery.NewPostHandler()
 	serviceHandler := serviceDelivery.NewServiceHandler()
@@ -79,5 +109,5 @@ func main() {
 
 	router(handlers)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	logger.Start().Fatal(ctx, e.Start(":8080"))
 }

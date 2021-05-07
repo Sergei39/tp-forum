@@ -12,6 +12,7 @@ const (
 	deliveryLevel   = "Delivery Level"
 	repositoryLevel = "Repository Level"
 	responseLevel   = "Response Level"
+	startLevel      = "Start Level"
 	utilsLevel      = "Utils Level"
 
 	defaultRequestId = "000"
@@ -80,6 +81,16 @@ func (entry *EntryLog) InlineDebug(ctx context.Context, data ...interface{}) {
 	}).Debug("[id: ", requestId, "] ", entry.level)
 }
 
+func (entry *EntryLog) Fatal(ctx context.Context, err error) {
+	requestId := ctx.Value("request_id")
+	if requestId == nil {
+		requestId = defaultRequestId
+	}
+	logrus.WithFields(logrus.Fields{
+		"error": err.Error(),
+	}).Error("[id: ", requestId, "] ", entry.level)
+}
+
 func Middleware() *EntryLog {
 	return &EntryLog{
 		level: middlewareLevel,
@@ -107,5 +118,11 @@ func Repo() *EntryLog {
 func Response() *EntryLog {
 	return &EntryLog{
 		level: responseLevel,
+	}
+}
+
+func Start() *EntryLog {
+	return &EntryLog{
+		level: startLevel,
 	}
 }

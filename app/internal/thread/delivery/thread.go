@@ -3,7 +3,7 @@ package delivery
 import (
 	"net/http"
 
-	threadModel "github.com/forums/internal/thread"
+	threadModel "github.com/forums/app/internal/thread"
 	"github.com/labstack/echo/v4"
 )
 

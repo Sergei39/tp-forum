@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/forums/internal/models"
+	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
 	"github.com/labstack/echo/v4"
 )
