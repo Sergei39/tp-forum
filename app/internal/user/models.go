@@ -15,11 +15,11 @@ type UserHandler interface {
 }
 
 type UserUsecase interface {
-	CreateUser(ctx context.Context, user *models.User) (response.Response, error)
+	CreateUser(ctx context.Context, user models.User) (response.Response, error)
 	GetUserByName(ctx context.Context, name string) (response.Response, error)
 }
 
 type UserRepo interface {
-	CreateUser(ctx context.Context, user *models.User) (int, error)
+	CreateUser(ctx context.Context, user models.User) (int, error)
 	GetUserByName(ctx context.Context, name string) (*models.User, error)
 }

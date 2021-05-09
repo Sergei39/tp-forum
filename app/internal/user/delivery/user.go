@@ -31,8 +31,9 @@ func (h *handler) CreateUser(c echo.Context) error {
 		return c.NoContent(sendErr.Code())
 	}
 	newUser.Nickname = nickname
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *newUser})
 
-	response, err := h.userUsecase.CreateUser(ctx, newUser)
+	response, err := h.userUsecase.CreateUser(ctx, *newUser)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -44,6 +45,7 @@ func (h *handler) GetUser(c echo.Context) error {
 	ctx := models.GetContext(c)
 
 	nickname := c.Param("nickname")
+	logger.Delivery().Info(ctx, logger.Fields{"request data": nickname})
 
 	response, err := h.userUsecase.GetUserByName(ctx, nickname)
 	if err != nil {

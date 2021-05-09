@@ -3,7 +3,7 @@ CREATE TABLE users (
     nickname TEXT,
     fullname TEXT,
     about TEXT,
-    email TEXT,
+    email TEXT
     -- password BYTEA --???
 );
 
@@ -11,7 +11,7 @@ CREATE TABLE forums (
     id SERIAL PRIMARY KEY,
     user_create INTEGER REFERENCES users(id) ON DELETE CASCADE,
     title TEXT,
-    slug TEXT, -- человекочетаемый URL
+    slug TEXT -- человекочетаемый URL
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом сообщений и кол-вом обсуждений
 );
@@ -25,7 +25,7 @@ CREATE TABLE threads (
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом голосов
     slug TEXT,
-    created TIMESTAMP,
+    created TIMESTAMP
 );
 
 CREATE TABLE posts (

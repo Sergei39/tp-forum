@@ -19,14 +19,14 @@ func NewUserUsecase(userRepo userModel.UserRepo) userModel.UserUsecase {
 	}
 }
 
-func (u *usecase) CreateUser(ctx context.Context, user *models.User) (
+func (u *usecase) CreateUser(ctx context.Context, user models.User) (
 	response.Response, error) {
 
-	user, err := u.userRepo.GetUserByName(ctx, user.Nickname)
+	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
 	if err != nil {
 		return nil, err
 	}
-	if user != nil {
+	if userDb != nil {
 		response := response.New(http.StatusConflict, user)
 		return response, nil
 	}

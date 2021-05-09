@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	middlewareLevel = "Middleware Level"
-	usecaseLevel    = "Usecase Level"
-	deliveryLevel   = "Delivery Level"
-	repositoryLevel = "Repository Level"
-	responseLevel   = "Response Level"
-	startLevel      = "Start Level"
-	utilsLevel      = "Utils Level"
+	middlewareLevel = "Middleware"
+	usecaseLevel    = "Usecase"
+	deliveryLevel   = "Delivery"
+	repositoryLevel = "Repository"
+	responseLevel   = "Response"
+	startLevel      = "Start"
+	utilsLevel      = "Utils"
 
 	defaultRequestId = "000"
 )
@@ -30,65 +30,75 @@ func InitLogger() {
 }
 
 type EntryLog struct {
-	level string
+	level    string
+	funcName string
+}
+
+func (entry *EntryLog) AddFuncName(name string) *EntryLog {
+	entry.funcName = name
+	return entry
+}
+
+func (entry *EntryLog) createMetaInfo(ctx context.Context) []interface{} {
+	requestId := ctx.Value("request_id")
+	if requestId == nil {
+		requestId = defaultRequestId
+	}
+
+	metaInfo := make([]interface{}, 0, 2)
+	metaInfo = append(metaInfo, "[id: ", requestId, "] ", entry.level)
+
+	if entry.funcName != "" {
+		metaInfo = append(metaInfo, " [", entry.funcName, "]")
+	}
+
+	return metaInfo
 }
 
 func (entry *EntryLog) Debug(ctx context.Context, fields Fields) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields(fields)).
-		Debug("[id: ", requestId, "] ", entry.level)
+		Debug(metaInfo...)
 }
 
 func (entry *EntryLog) Info(ctx context.Context, fields Fields) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields(fields)).
-		Info("[id: ", requestId, "] ", entry.level)
+		Info(metaInfo...)
 }
 
 func (entry *EntryLog) Error(ctx context.Context, err error) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields{
 		"error": err.Error(),
-	}).Warn("[id: ", requestId, "] ", entry.level)
+	}).Warn(metaInfo...)
 }
 
 func (entry *EntryLog) InlineInfo(ctx context.Context, data ...interface{}) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields{
 		"info": data,
-	}).Info("[id: ", requestId, "] ", entry.level)
+	}).Info(metaInfo...)
 }
 
 func (entry *EntryLog) InlineDebug(ctx context.Context, data ...interface{}) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields{
 		"data": data,
-	}).Debug("[id: ", requestId, "] ", entry.level)
+	}).Debug(metaInfo...)
 }
 
 func (entry *EntryLog) Fatal(ctx context.Context, err error) {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	metaInfo := entry.createMetaInfo(ctx)
+
 	logrus.WithFields(logrus.Fields{
 		"error": err.Error(),
-	}).Error("[id: ", requestId, "] ", entry.level)
+	}).Error(metaInfo...)
 }
 
 func Middleware() *EntryLog {

@@ -22,12 +22,18 @@ func NewUserRepo(db *sql.DB) userModel.UserRepo {
 func (r *repo) GetUserByName(ctx context.Context, name string) (
 	*models.User, error) {
 
+	user := new(models.User)
 	query :=
 		`
 		SELECT nickname, fullname, about, email
 		FROM users WHERE nickname = $1
 	`
-	DBdish, err := r.DB.Query(query, name)
+	err := r.DB.QueryRow(query, name).Scan(
+		&user.Nickname,
+		&user.Fullname,
+		&user.About,
+		&user.Email,
+	)
 	if err == sql.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"user": "not user"})
 		return nil, nil
@@ -37,23 +43,11 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (
 		return nil, err
 	}
 
-	user := new(models.User)
-	err = DBdish.Scan(
-		&user.Nickname,
-		&user.Fullname,
-		&user.About,
-		&user.Email,
-	)
-	if err != nil {
-		logger.Repo().Error(ctx, err)
-		return nil, err
-	}
-
 	logger.Repo().Debug(ctx, logger.Fields{"user": *user})
 	return user, nil
 }
 
-func (r *repo) CreateUser(ctx context.Context, user *models.User) (
+func (r *repo) CreateUser(ctx context.Context, user models.User) (
 	id int, err error) {
 
 	query :=
@@ -69,7 +63,7 @@ func (r *repo) CreateUser(ctx context.Context, user *models.User) (
 		user.Email).Scan(&id)
 
 	if err != nil {
-		logger.Repo().Error(ctx, err)
+		logger.Repo().AddFuncName("CreateUser").Error(ctx, err)
 		return 0, err
 	}
 
