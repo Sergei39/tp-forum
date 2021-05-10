@@ -1,3 +1,9 @@
+DROP TABLE users CASCADE;
+DROP TABLE forums CASCADE;
+DROP TABLE threads CASCADE;
+DROP TABLE posts CASCADE;
+DROP TABLE votes CASCADE;
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     nickname TEXT,
@@ -9,7 +15,8 @@ CREATE TABLE users (
 
 CREATE TABLE forums (
     id SERIAL PRIMARY KEY,
-    user_create INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_create TEXT,
+    -- user_create INTEGER REFERENCES users(id) ON DELETE CASCADE,
     title TEXT,
     slug TEXT -- человекочетаемый URL
     -- возможная оптимизация в будущем

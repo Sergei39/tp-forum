@@ -19,8 +19,7 @@ func NewUserRepo(db *sql.DB) userModel.UserRepo {
 	}
 }
 
-func (r *repo) GetUserByName(ctx context.Context, name string) (
-	*models.User, error) {
+func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, error) {
 
 	user := new(models.User)
 	query :=
@@ -47,14 +46,12 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (
 	return user, nil
 }
 
-func (r *repo) CreateUser(ctx context.Context, user models.User) (
-	id int, err error) {
+func (r *repo) CreateUser(ctx context.Context, user models.User) (id int, err error) {
 
 	query :=
 		`
 		INSERT INTO users (nickname, fullname, about, email) 
 		VALUES ($1, $2, $3, $4) returning id
-
 	`
 	err = r.DB.QueryRow(query,
 		user.Nickname,
@@ -64,6 +61,25 @@ func (r *repo) CreateUser(ctx context.Context, user models.User) (
 
 	if err != nil {
 		logger.Repo().AddFuncName("CreateUser").Error(ctx, err)
+		return 0, err
+	}
+
+	logger.Repo().Debug(ctx, logger.Fields{"user id": id})
+	return id, nil
+}
+
+func (r *repo) UpdateUser(ctx context.Context, user models.User) (id int, err error) {
+
+	query :=
+		`
+		UPDATE users
+		SET fullname = $1, about = $2, email = $3
+		WHERE nickname = $4
+	`
+
+	_, err = r.DB.Exec(query, user.Fullname, user.About, user.Email, user.Nickname)
+	if err != nil {
+		logger.Repo().AddFuncName("UpdateUser").Error(ctx, err)
 		return 0, err
 	}
 

@@ -56,5 +56,22 @@ func (h *handler) GetUser(c echo.Context) error {
 }
 
 func (h *handler) UpdateUser(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	nickname := c.Param("nickname")
+	newUser := new(models.User)
+	if err := c.Bind(newUser); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	newUser.Nickname = nickname
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *newUser})
+
+	response, err := h.userUsecase.CreateUser(ctx, *newUser)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
