@@ -17,9 +17,11 @@ import (
 	"github.com/forums/utils/logger"
 
 	forumRepository "github.com/forums/app/internal/forum/repository"
+	serviceRepository "github.com/forums/app/internal/service/repository"
 	userRepository "github.com/forums/app/internal/user/repository"
 
 	forumUsecase "github.com/forums/app/internal/forum/usecase"
+	serviceUsecase "github.com/forums/app/internal/service/usecase"
 	userUsecase "github.com/forums/app/internal/user/usecase"
 
 	forumDelivery "github.com/forums/app/internal/forum/delivery"
@@ -92,14 +94,16 @@ func main() {
 
 	userRepo := userRepository.NewUserRepo(db)
 	forumRepo := forumRepository.NewForumRepo(db)
+	serviceRepo := serviceRepository.NewServiceRepo(db)
 
 	userUcase := userUsecase.NewUserUsecase(userRepo)
 	forumUcase := forumUsecase.NewForumUsecase(forumRepo)
+	serviceUcase := serviceUsecase.NewServiceUsecase(serviceRepo)
 
 	userHandler := userDelivery.NewUserHandler(userUcase)
 	forumHandler := forumDelivery.NewForumHandler(forumUcase)
 	postHandler := postDelivery.NewPostHandler()
-	serviceHandler := serviceDelivery.NewServiceHandler()
+	serviceHandler := serviceDelivery.NewServiceHandler(serviceUcase)
 	threadHandler := threadDelivery.NewThreadHandler()
 
 	handlers := Handler{
