@@ -36,6 +36,7 @@ func (r *repo) ClearDb(ctx context.Context) error {
 }
 
 func (r *repo) StatusDb(ctx context.Context) (*models.InfoStatus, error) {
+	// TODO: возможно сделать не прямой запрос кол-ва а через другие средства
 	info := new(models.InfoStatus)
 	var err error
 
