@@ -7,3 +7,17 @@ type Forum struct {
 	Posts   int    `json:"posts"`
 	Threads int    `json:"threads"`
 }
+
+type ForumUsers struct {
+	Slug  string `json:"slug"`
+	Limit int    `json:"limit"`
+	Since string `json:"since"`
+	Desc  bool   `json:"desc"`
+}
+
+type ForumThreads struct {
+	Slug  string `json:"slug"`
+	Limit int    `json:"limit"`
+	Since string `json:"since"`
+	Desc  bool   `json:"desc"`
+}

@@ -1,7 +1,7 @@
 package models
 
 type Thread struct {
-	Id      int32  `json:"id"`
+	Id      int    `json:"id"`
 	Title   string `json:"title"`
 	Author  string `json:"author"`
 	Forum   string `json:"forum"`

@@ -5,17 +5,20 @@ import (
 	"net/http"
 
 	forumModel "github.com/forums/app/internal/forum"
+	userModel "github.com/forums/app/internal/user"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/response"
 )
 
 type usecase struct {
-	forumRepo forumModel.UserRepo
+	forumRepo forumModel.ForumRepo
+	userRepo  userModel.UserRepo
 }
 
-func NewForumUsecase(forumRepo forumModel.UserRepo) forumModel.ForumUsecase {
+func NewForumUsecase(forumRepo forumModel.ForumRepo, userRepo userModel.UserRepo) forumModel.ForumUsecase {
 	return &usecase{
 		forumRepo: forumRepo,
+		userRepo:  userRepo,
 	}
 }
 
@@ -28,6 +31,18 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 	if forumDb != nil {
 		response := response.New(http.StatusConflict, forumDb)
 		return response, nil
+	}
+
+	user, err := u.userRepo.GetUserByName(ctx, forum.User)
+	if err == nil && user == nil {
+		message := models.Message{
+			Message: "Can't find user with id #" + forum.User + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+	if user != nil {
+		return nil, err
 	}
 
 	_, err = u.forumRepo.CreateForum(ctx, forum)
@@ -54,5 +69,51 @@ func (u *usecase) GetForumBySlug(ctx context.Context, slug string) (response.Res
 	}
 
 	response := response.New(http.StatusOK, forum)
+	return response, nil
+}
+
+func (u *usecase) GetUsers(ctx context.Context, forumUsers models.ForumUsers) (response.Response, error) {
+	forum, err := u.forumRepo.GetForumBySlug(ctx, forumUsers.Slug)
+	if err != nil {
+		return nil, err
+	}
+
+	if forum == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + forumUsers.Slug + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	users, err := u.GetUsers(ctx, forumUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	response := response.New(http.StatusOK, users)
+	return response, nil
+}
+
+func (u *usecase) GetThreads(ctx context.Context, forumThreads models.ForumThreads) (response.Response, error) {
+	forum, err := u.forumRepo.GetForumBySlug(ctx, forumThreads.Slug)
+	if err != nil {
+		return nil, err
+	}
+
+	if forum == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + forumThreads.Slug + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	threads, err := u.GetThreads(ctx, forumThreads)
+	if err != nil {
+		return nil, err
+	}
+
+	response := response.New(http.StatusOK, threads)
 	return response, nil
 }

@@ -51,7 +51,7 @@ func router(h Handler) {
 	forumGroup := h.echo.Group("/forum")
 	forumGroup.POST("/create", h.forum.CreateForum)
 	forumGroup.GET("/:slug/details", h.forum.GetDetails)
-	forumGroup.POST("/:slug/create", h.forum.GetThreads)
+	forumGroup.POST("/:slug/create", h.thread.CreateThread)
 	forumGroup.GET("/:slug/users", h.forum.GetUsers)
 	forumGroup.GET("/:slug/threads", h.forum.GetThreads)
 
@@ -64,7 +64,7 @@ func router(h Handler) {
 	serviceGroup.GET("/status", h.service.StatusDb)
 
 	threadGroup := h.echo.Group("/thraed")
-	threadGroup.POST("/:slag_or_id/create", h.thread.CreateThread)
+	// threadGroup.POST("/:slag_or_id/create", h.thread.CreateThread)
 	threadGroup.GET("/:slag_or_id/details", h.thread.GetDetails)
 	threadGroup.POST("/:slag_or_id/details", h.thread.UpdateDetails)
 	threadGroup.GET("/:slag_or_id/posts", h.thread.GetPosts)

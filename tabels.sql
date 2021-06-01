@@ -9,7 +9,7 @@ CREATE TABLE users (
     nickname TEXT UNIQUE NOT NULL,
     fullname TEXT,
     about TEXT,
-    email TEXT
+    email TEXT UNIQUE
     -- password BYTEA --???
 );
 
@@ -18,7 +18,7 @@ CREATE TABLE forums (
     -- user_create TEXT,
     user_create TEXT REFERENCES users(nickname) ON DELETE CASCADE,
     title TEXT,
-    slug TEXT -- человекочетаемый URL
+    slug TEXT UNIQUE -- человекочетаемый URL
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом сообщений и кол-вом обсуждений
 );
@@ -26,13 +26,13 @@ CREATE TABLE forums (
 CREATE TABLE threads (
     id SERIAL PRIMARY KEY,
     title TEXT,
-    user_create INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_create TEXT REFERENCES users(nickname) ON DELETE CASCADE,
     forum INTEGER REFERENCES forums(id) ON DELETE CASCADE,
     message TEXT, -- описание ветки
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом голосов
     slug TEXT,
-    created TIMESTAMP
+    created TEXT
 );
 
 CREATE TABLE posts (
@@ -40,7 +40,7 @@ CREATE TABLE posts (
     title TEXT,
     parent INTEGER DEFAULT 0 REFERENCES posts(id) ON DELETE CASCADE,
     forum INTEGER REFERENCES forums(id) ON DELETE CASCADE,
-    author INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_create INTEGER REFERENCES users(nickname) ON DELETE CASCADE,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
     created TIMESTAMP,
     message TEXT,

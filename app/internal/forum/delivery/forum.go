@@ -53,14 +53,44 @@ func (h *Handler) GetDetails(c echo.Context) error {
 	return c.JSON(response.Code(), response.Body())
 }
 
-func (h *Handler) CreateThread(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
-}
-
 func (h *Handler) GetUsers(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	slug := c.Param("slug")
+	forumUsers := new(models.ForumUsers)
+	if err := c.Bind(forumUsers); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	forumUsers.Slug = slug
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumUsers})
+
+	response, err := h.forumUsecase.GetUsers(ctx, *forumUsers)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
 
 func (h *Handler) GetThreads(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	slug := c.Param("slug")
+	forumThreads := new(models.ForumThreads)
+	if err := c.Bind(forumThreads); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	forumThreads.Slug = slug
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumThreads})
+
+	response, err := h.forumUsecase.GetThreads(ctx, *forumThreads)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
