@@ -46,6 +46,33 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, er
 	return user, nil
 }
 
+func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+
+	user := new(models.User)
+	query :=
+		`
+		SELECT nickname, fullname, about, email
+		FROM users WHERE email = $1
+	`
+	err := r.DB.QueryRow(query, email).Scan(
+		&user.Nickname,
+		&user.Fullname,
+		&user.About,
+		&user.Email,
+	)
+	if err == sql.ErrNoRows {
+		logger.Repo().Info(ctx, logger.Fields{"user": "not user"})
+		return nil, nil
+	}
+	if err != nil {
+		logger.Repo().Error(ctx, err)
+		return nil, err
+	}
+
+	logger.Repo().Debug(ctx, logger.Fields{"user": *user})
+	return user, nil
+}
+
 func (r *repo) CreateUser(ctx context.Context, user models.User) (id int, err error) {
 
 	query :=

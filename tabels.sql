@@ -49,7 +49,7 @@ CREATE TABLE posts (
 
 CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
-    user_create INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_create INTEGER REFERENCES users(nickname) ON DELETE CASCADE,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
     voice INTEGER
 );

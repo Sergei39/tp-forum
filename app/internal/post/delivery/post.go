@@ -30,13 +30,10 @@ func (h *Handler) CreatePosts(c echo.Context) error {
 		logger.Delivery().Error(ctx, sendErr)
 		return c.NoContent(sendErr.Code())
 	}
-	id, err := strconv.Atoi(c.Param("slug_or_id"))
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
+	slug := c.Param("slug_or_id")
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *posts})
 
-	response, err := h.postUsecase.CreatePosts(ctx, *posts, id)
+	response, err := h.postUsecase.CreatePosts(ctx, *posts, slug)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}

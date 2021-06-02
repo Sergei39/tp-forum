@@ -17,7 +17,7 @@ type PostHandler interface {
 type PostUsecase interface {
 	GetDetails(ctx context.Context, request models.RequestPost) (response.Response, error)
 	UpdateMessage(ctx context.Context, request models.MessagePostRequest) (response.Response, error)
-	CreatePosts(ctx context.Context, posts []models.Post, thread int) (response.Response, error)
+	CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error)
 }
 
 type PostRepo interface {

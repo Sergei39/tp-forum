@@ -96,13 +96,24 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 	return response, nil
 }
 
-func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, threadId int) (response.Response, error) {
-	// TODO: добавить проверку на существование ветки
+func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error) {
 	// TODO: добавить добавление форума в пост перед добавлением в бд
 	// TODO: создание даты
 
+	thread, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+	if thread == nil {
+		message := models.Message{
+			Message: "Can't find thread with id #" + slugOrId + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
 	for i, post := range posts {
-		posts[i].Thread = threadId
+		posts[i].Thread = thread.Id
 
 		id, err := u.postRepo.CreatePost(ctx, post)
 		if err != nil {

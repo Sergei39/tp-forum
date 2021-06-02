@@ -110,6 +110,7 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 
 func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
 	// TODO: понять что все таки может прийти в запросе slug или id
+	// TODO: подумать как это сделать меньшим кол-вом запросов
 	thread, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
 	if err != nil {
 		return nil, err

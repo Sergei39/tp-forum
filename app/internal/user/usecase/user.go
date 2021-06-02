@@ -20,8 +20,17 @@ func NewUserUsecase(userRepo userModel.UserRepo) userModel.UserUsecase {
 }
 
 func (u *usecase) CreateUser(ctx context.Context, user models.User) (response.Response, error) {
-
+	// TODO: сделать проверку одним запросом
 	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
+	if err != nil {
+		return nil, err
+	}
+	if userDb != nil {
+		response := response.New(http.StatusConflict, userDb)
+		return response, nil
+	}
+
+	userDb, err = u.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -54,5 +63,37 @@ func (u *usecase) GetUserByName(ctx context.Context, name string) (response.Resp
 	}
 
 	response := response.New(http.StatusOK, user)
+	return response, nil
+}
+
+func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Response, error) {
+
+	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
+	if err != nil {
+		return nil, err
+	}
+	if userDb == nil {
+		message := models.Message{
+			Message: "Can't find user with id #" + user.Nickname + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	userDb, err = u.userRepo.GetUserByEmail(ctx, user.Email)
+	if err != nil {
+		return nil, err
+	}
+	if userDb != nil {
+		response := response.New(http.StatusConflict, userDb)
+		return response, nil
+	}
+
+	_, err = u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	response := response.New(http.StatusCreated, user)
 	return response, nil
 }

@@ -68,7 +68,7 @@ func (h *handler) UpdateUser(c echo.Context) error {
 	newUser.Nickname = nickname
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newUser})
 
-	response, err := h.userUsecase.CreateUser(ctx, *newUser)
+	response, err := h.userUsecase.UpdateUser(ctx, *newUser)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
