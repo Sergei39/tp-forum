@@ -44,7 +44,7 @@ CREATE TABLE posts (
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
     created TIMESTAMP,
     message TEXT,
-    is_edited BOOLEAN
+    is_edited BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE votes (

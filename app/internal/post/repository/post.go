@@ -66,3 +66,27 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 
 	return nil
 }
+
+func (r *repo) CreatePost(ctx context.Context, post models.Post) (int, error) {
+
+	query :=
+		`
+		INSERT INTO posts (parent, author, message, forum, thread) VALUES
+		($1, $2, $3, $4, $5) returning id
+	`
+
+	id := new(int)
+	err := r.DB.QueryRow(query,
+		post.Parent,
+		post.Author,
+		post.Message,
+		post.Forum,
+		post.Thread).Scan(&id)
+
+	if err != nil {
+		logger.Repo().AddFuncName("CreatePost").Error(ctx, err)
+		return 0, err
+	}
+
+	return *id, nil
+}

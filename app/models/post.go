@@ -7,7 +7,7 @@ type Post struct {
 	Message  string `json:"message"`
 	IsEdited bool   `json:"isEdited"`
 	Forum    string `json:"forum"`
-	Thread   string `json:"thread"`
+	Thread   int    `json:"thread"`
 	Created  string `json:"created"`
 }
 

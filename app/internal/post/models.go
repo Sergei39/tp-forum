@@ -11,14 +11,17 @@ import (
 type PostHandler interface {
 	GetDetails(c echo.Context) error
 	UpdateDetails(c echo.Context) error
+	CreatePosts(c echo.Context) error
 }
 
 type PostUsecase interface {
 	GetDetails(ctx context.Context, request models.RequestPost) (response.Response, error)
 	UpdateMessage(ctx context.Context, request models.MessagePostRequest) (response.Response, error)
+	CreatePosts(ctx context.Context, posts []models.Post, thread int) (response.Response, error)
 }
 
 type PostRepo interface {
 	GetPost(ctx context.Context, id int) (*models.Post, error)
 	UpdateMessage(ctx context.Context, request models.MessagePostRequest) error
+	CreatePost(ctx context.Context, post models.Post) (int, error)
 }

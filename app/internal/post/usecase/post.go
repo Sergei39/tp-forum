@@ -95,3 +95,25 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 	response := response.New(http.StatusOK, post)
 	return response, nil
 }
+
+func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, threadId int) (response.Response, error) {
+	// TODO: добавить проверку на существование ветки
+	// TODO: добавить добавление форума в пост перед добавлением в бд
+	// TODO: создание даты
+
+	for i, post := range posts {
+		posts[i].Thread = threadId
+
+		id, err := u.postRepo.CreatePost(ctx, post)
+		if err != nil {
+			return nil, err
+		}
+
+		posts[i].Id = int64(id)
+	}
+
+	// TODO: сделать проверку на то что parent валидный
+
+	response := response.New(http.StatusOK, posts)
+	return response, nil
+}

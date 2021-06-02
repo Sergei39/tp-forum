@@ -21,6 +21,29 @@ func NewPostHandler(postUsecase postModel.PostUsecase) postModel.PostHandler {
 	}
 }
 
+func (h *Handler) CreatePosts(c echo.Context) error {
+	ctx := models.GetContext(c)
+
+	posts := new([]models.Post)
+	if err := c.Bind(posts); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	id, err := strconv.Atoi(c.Param("slug_or_id"))
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *posts})
+
+	response, err := h.postUsecase.CreatePosts(ctx, *posts, id)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
+}
+
 func (h *Handler) GetDetails(c echo.Context) error {
 	ctx := models.GetContext(c)
 
