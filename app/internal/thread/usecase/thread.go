@@ -61,3 +61,84 @@ func (u *usecase) CreateThread(ctx context.Context, thread models.Thread, slug s
 	response := response.New(http.StatusCreated, thread)
 	return response, nil
 }
+
+func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Response, error) {
+	// TODO: понять что все таки может прийти в запросе slug или id
+	thread, err := u.threadRepo.GetThreadBySlug(ctx, slug_or_id)
+	if err != nil {
+		return nil, err
+	}
+
+	if thread == nil {
+		message := models.Message{
+			Message: "Can't find thread with id #" + slug_or_id + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	response := response.New(http.StatusCreated, thread)
+	return response, nil
+}
+
+func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOrId string) (response.Response, error) {
+	// TODO: понять что все таки может прийти в запросе slug или id
+	threadOld, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	if threadOld == nil {
+		message := models.Message{
+			Message: "Can't find thread with id #" + slugOrId + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	threadOld.Title = thread.Title
+	threadOld.Message = thread.Message
+
+	err = u.threadRepo.UpdateThreadBySlug(ctx, *threadOld)
+	if err != nil {
+		return nil, err
+	}
+
+	response := response.New(http.StatusCreated, threadOld)
+	return response, nil
+}
+
+func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
+	// TODO: понять что все таки может прийти в запросе slug или id
+	thread, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	vote.Thread = thread.Id
+	id, ok, err := u.threadRepo.CheckVote(ctx, vote)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		err = u.threadRepo.AddVote(ctx, vote)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if ok {
+		vote.Id = id
+		err = u.threadRepo.UpdateVote(ctx, vote)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	thread, err = u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	if err != nil {
+		return nil, err
+	}
+	response := response.New(http.StatusCreated, thread)
+	return response, nil
+}

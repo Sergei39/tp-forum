@@ -41,17 +41,60 @@ func (h *Handler) CreateThread(c echo.Context) error {
 }
 
 func (h *Handler) GetDetails(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	slugOrId := c.Param("slug_or_id")
+	logger.Delivery().Info(ctx, logger.Fields{"request data slug or id": slugOrId})
+
+	response, err := h.threadUsecase.GetThread(ctx, slugOrId)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
 
 func (h *Handler) UpdateDetails(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	slugOrId := c.Param("slug_or_id")
+	newThread := new(models.Thread)
+	if err := c.Bind(newThread); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *newThread})
+
+	response, err := h.threadUsecase.UpdateThread(ctx, *newThread, slugOrId)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
 
 func (h *Handler) GetPosts(c echo.Context) error {
+	// TODO:
 	return c.JSON(http.StatusOK, nil)
 }
 
 func (h *Handler) Vote(c echo.Context) error {
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	slugOrId := c.Param("slug_or_id")
+	vote := new(models.Vote)
+	if err := c.Bind(vote); err != nil {
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		return c.NoContent(sendErr.Code())
+	}
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *vote})
+
+	response, err := h.threadUsecase.AddVote(ctx, *vote, slugOrId)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
