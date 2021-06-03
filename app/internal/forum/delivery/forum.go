@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"net/http"
+	"strconv"
 
 	forumModel "github.com/forums/app/internal/forum"
 	"github.com/forums/app/models"
@@ -36,6 +37,7 @@ func (h *Handler) CreateForum(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	logger.Delivery().Debug(ctx, logger.Fields{"response": response})
 	return c.JSON(response.Code(), response.Body())
 }
 
@@ -77,14 +79,29 @@ func (h *Handler) GetUsers(c echo.Context) error {
 func (h *Handler) GetThreads(c echo.Context) error {
 	ctx := models.GetContext(c)
 
-	slug := c.Param("slug")
 	forumThreads := new(models.ForumThreads)
-	if err := c.Bind(forumThreads); err != nil {
-		sendErr := errors.New(http.StatusBadRequest, err.Error())
-		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
+
+	forumThreads.Slug = c.Param("slug")
+	limit := c.QueryParam("limit")
+	if limit != "" {
+		limitConv, err := strconv.Atoi(limit)
+		if err != nil {
+			sendErr := errors.New(http.StatusBadRequest, "convert request data - limit")
+			logger.Delivery().Error(ctx, sendErr)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+
+		forumThreads.Limit = limitConv
 	}
-	forumThreads.Slug = slug
+
+	forumThreads.Since = c.QueryParam("since")
+	desc := c.QueryParam("desc")
+	if desc == "false" || desc == "" {
+		forumThreads.Desc = false
+	} else {
+		forumThreads.Desc = true
+	}
+
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumThreads})
 
 	response, err := h.forumUsecase.GetThreads(ctx, *forumThreads)

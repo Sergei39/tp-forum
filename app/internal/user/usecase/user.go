@@ -20,22 +20,12 @@ func NewUserUsecase(userRepo userModel.UserRepo) userModel.UserUsecase {
 }
 
 func (u *usecase) CreateUser(ctx context.Context, user models.User) (response.Response, error) {
-	// TODO: сделать проверку одним запросом
-	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
+	users, err := u.userRepo.GetUserByNameAndEmail(ctx, user.Nickname, user.Email)
 	if err != nil {
 		return nil, err
 	}
-	if userDb != nil {
-		response := response.New(http.StatusConflict, userDb)
-		return response, nil
-	}
-
-	userDb, err = u.userRepo.GetUserByEmail(ctx, user.Email)
-	if err != nil {
-		return nil, err
-	}
-	if userDb != nil {
-		response := response.New(http.StatusConflict, userDb)
+	if len(users) != 0 {
+		response := response.New(http.StatusConflict, users)
 		return response, nil
 	}
 
@@ -66,6 +56,22 @@ func (u *usecase) GetUserByName(ctx context.Context, name string) (response.Resp
 	return response, nil
 }
 
+func (u *usecase) fixData(newUser models.User, oldUser models.User) models.User {
+	if newUser.About == "" {
+		newUser.About = oldUser.About
+	}
+
+	if newUser.Email == "" {
+		newUser.Email = oldUser.Email
+	}
+
+	if newUser.Fullname == "" {
+		newUser.Fullname = oldUser.Fullname
+	}
+
+	return newUser
+}
+
 func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Response, error) {
 
 	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
@@ -80,11 +86,13 @@ func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Re
 		return response, nil
 	}
 
+	user = u.fixData(user, *userDb)
+
 	userDb, err = u.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
 		return nil, err
 	}
-	if userDb != nil {
+	if userDb != nil && userDb.Nickname != user.Nickname {
 		response := response.New(http.StatusConflict, userDb)
 		return response, nil
 	}
@@ -94,6 +102,6 @@ func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Re
 		return nil, err
 	}
 
-	response := response.New(http.StatusCreated, user)
+	response := response.New(http.StatusOK, user)
 	return response, nil
 }

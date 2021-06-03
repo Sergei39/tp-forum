@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	forumModel "github.com/forums/app/internal/forum"
 	"github.com/forums/app/models"
@@ -44,20 +45,14 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 	forum := new(models.Forum)
 	query :=
 		`
-		SELECT f.title, f.user_create, f.slug, count(p), count(th)
+		SELECT f.title, f.user_create, f.slug
 		FROM forums as f
-		JOIN posts as p 
-		ON p.forum = f.id
-		JOIN threads as th
-		ON th.forum = f.id
 		WHERE f.slug = $1
 	`
 	err := r.DB.QueryRow(query, slug).Scan(
 		&forum.Title,
 		&forum.User,
 		&forum.Slug,
-		&forum.Posts,
-		&forum.Threads,
 	)
 	if err == sql.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"forum": "not forum"})
@@ -89,6 +84,7 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 	`
 	usersDB, err := r.DB.Query(query, forumUsers.Slug)
 	if err != nil {
+		logger.Repo().AddFuncName("GetUsers").Error(ctx, err)
 		return nil, err
 	}
 
@@ -111,6 +107,7 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 		users = append(users, *user)
 	}
 
+	logger.Repo().Info(ctx, logger.Fields{"users": users})
 	return users, nil
 }
 
@@ -118,18 +115,43 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	// TODO: доделать правильный запрос
 	query :=
 		`
-		SELECT DISTINCT th.id, th.title, th.user_create, f.slug, 
-		th.message, count(v), th.slug, th.created
-		FROM forum as f
-		JOIN threads as th 
-		ON th.forum = f.id
-		JOIN votes as v
-		ON v.thread = th.id
-		WHERE f.slug = $1
-		ORDER BY th.created
+		SELECT DISTINCT th.id, th.title, th.user_create, th.forum, 
+		th.message, th.slug, th.created
+		FROM threads as th
+		WHERE th.forum = $1
 	`
+
+	if forumThreads.Desc {
+		if forumThreads.Since != "" {
+			query += " AND th.created >= " + forumThreads.Since
+		}
+
+		query += " ORDER BY th.created DESC"
+	} else {
+		if forumThreads.Since != "" {
+			query += " AND th.created <= " + forumThreads.Since
+		}
+		query += " ORDER BY th.created"
+	}
+
+	if forumThreads.Limit != 0 {
+		query += " LIMIT " + strconv.Itoa(forumThreads.Limit)
+	}
+	// query :=
+	// 	`
+	// 	SELECT DISTINCT th.id, th.title, th.user_create, th.forum,
+	// 	th.message, count(v), th.slug, th.created
+	// 	FROM threads as th
+	// 	JOIN votes as v
+	// 	ON v.thread = th.id
+	// 	WHERE th.forum = A9-h-JV4RK5jr
+	// 	GROUP BY th.id
+	// 	ORDER BY th.created;
+	// `
+
 	threadsDB, err := r.DB.Query(query, forumThreads.Slug)
 	if err != nil {
+		logger.Repo().AddFuncName("GetThreads").Error(ctx, err)
 		return nil, err
 	}
 
@@ -143,7 +165,6 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 			&thread.Author,
 			&thread.Forum,
 			&thread.Message,
-			&thread.Votes,
 			&thread.Slug,
 			&thread.Created,
 		)

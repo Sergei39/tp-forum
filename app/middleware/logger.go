@@ -18,14 +18,17 @@ func LogMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set("request_id", requestID)
 		ctx := models.GetContext(c)
 
-		result := next(c)
-
 		logger.Middleware().Info(ctx, logger.Fields{
 			"url":           c.Request().URL,
 			"method":        c.Request().Method,
 			"remote_addr":   c.Request().RemoteAddr,
-			"work_time":     time.Since(start),
 			"server_status": c.Response().Status,
+		})
+
+		result := next(c)
+
+		logger.Middleware().Info(ctx, logger.Fields{
+			"work_time": time.Since(start),
 		})
 
 		return result

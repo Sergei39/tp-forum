@@ -19,8 +19,50 @@ func NewUserRepo(db *sql.DB) userModel.UserRepo {
 	}
 }
 
+func (r *repo) GetUserByNameAndEmail(ctx context.Context, name, email string) ([]models.User, error) {
+
+	logger.Repo().Debug(ctx, logger.Fields{"name, email": name})
+	query :=
+		`
+		SELECT nickname, fullname, about, email
+		FROM users WHERE nickname = $1 OR email = $2
+	`
+	usersDB, err := r.DB.Query(query, name, email)
+	if err == sql.ErrNoRows {
+		logger.Repo().Info(ctx, logger.Fields{"user": "not user with nickname and email"})
+		return nil, nil
+	}
+	if err != nil {
+		logger.Repo().Error(ctx, err)
+		return nil, err
+	}
+
+	users := make([]models.User, 0)
+	for usersDB.Next() {
+		user := new(models.User)
+
+		err := usersDB.Scan(
+			&user.Nickname,
+			&user.Fullname,
+			&user.About,
+			&user.Email,
+		)
+
+		if err != nil {
+			logger.Repo().AddFuncName("GetUsers").Error(ctx, err)
+			return nil, err
+		}
+
+		users = append(users, *user)
+	}
+
+	logger.Repo().Info(ctx, logger.Fields{"users": users})
+	return users, nil
+}
+
 func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, error) {
 
+	logger.Repo().Debug(ctx, logger.Fields{"name": name})
 	user := new(models.User)
 	query :=
 		`
@@ -34,7 +76,7 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, er
 		&user.Email,
 	)
 	if err == sql.ErrNoRows {
-		logger.Repo().Info(ctx, logger.Fields{"user": "not user"})
+		logger.Repo().Info(ctx, logger.Fields{"user": "not user with nickname"})
 		return nil, nil
 	}
 	if err != nil {
@@ -48,6 +90,7 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, er
 
 func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 
+	logger.Repo().Debug(ctx, logger.Fields{"email": email})
 	user := new(models.User)
 	query :=
 		`
@@ -61,7 +104,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, 
 		&user.Email,
 	)
 	if err == sql.ErrNoRows {
-		logger.Repo().Info(ctx, logger.Fields{"user": "not user"})
+		logger.Repo().Info(ctx, logger.Fields{"user": "not user with email"})
 		return nil, nil
 	}
 	if err != nil {

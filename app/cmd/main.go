@@ -47,27 +47,28 @@ type Handler struct {
 }
 
 func router(h Handler) {
-	userGroup := h.echo.Group("/user")
+	apiGroup := h.echo.Group("/api")
+	userGroup := apiGroup.Group("/user")
 	userGroup.POST("/:nickname/create", h.user.CreateUser)
 	userGroup.GET("/:nickname/profile", h.user.GetUser)
 	userGroup.POST("/:nickname/profile", h.user.UpdateUser)
 
-	forumGroup := h.echo.Group("/forum")
+	forumGroup := apiGroup.Group("/forum")
 	forumGroup.POST("/create", h.forum.CreateForum)
 	forumGroup.GET("/:slug/details", h.forum.GetDetails)
 	forumGroup.POST("/:slug/create", h.thread.CreateThread)
 	forumGroup.GET("/:slug/users", h.forum.GetUsers)
 	forumGroup.GET("/:slug/threads", h.forum.GetThreads)
 
-	postGroup := h.echo.Group("/post")
+	postGroup := apiGroup.Group("/post")
 	postGroup.GET("/:id/details", h.post.GetDetails)
 	postGroup.POST("/:id/details", h.post.UpdateDetails)
 
-	serviceGroup := h.echo.Group("/service")
+	serviceGroup := apiGroup.Group("/service")
 	serviceGroup.POST("/clear", h.service.ClearDb)
 	serviceGroup.GET("/status", h.service.StatusDb)
 
-	threadGroup := h.echo.Group("/thraed")
+	threadGroup := apiGroup.Group("/thraed")
 	// threadGroup.POST("/:slag_or_id/create", h.thread.CreateThread)
 	threadGroup.GET("/:slag_or_id/details", h.thread.GetDetails)
 	threadGroup.POST("/:slag_or_id/details", h.thread.UpdateDetails)
@@ -125,5 +126,5 @@ func main() {
 
 	router(handlers)
 
-	logger.Start().Fatal(ctx, e.Start(":8080"))
+	logger.Start().Fatal(ctx, e.Start(":5000"))
 }

@@ -20,17 +20,32 @@ func NewThreadRepo(db *sql.DB) threadModel.ThreadRepo {
 }
 
 func (r *repo) CreateThread(ctx context.Context, thread models.Thread) (id int, err error) {
+	var query string
+	var queryParams []interface{}
 
-	query :=
-		`
-		INSERT INTO threads (title, user_create, message, created) 
-		VALUES ($1, $2, $3, $4) returning id
-	`
-	err = r.DB.QueryRow(query,
+	queryParams = append(queryParams,
 		thread.Title,
 		thread.Author,
 		thread.Message,
-		thread.Created).Scan(&id)
+		thread.Forum,
+		thread.Slug,
+	)
+	if thread.Created != "" {
+		query =
+			`
+		INSERT INTO threads (title, user_create, message, forum, slug, created) 
+		VALUES ($1, $2, $3, $4, $5, $6) returning id
+	`
+		queryParams = append(queryParams, thread.Created)
+	} else {
+		query =
+			`
+		INSERT INTO threads (title, user_create, message, forum, slug) 
+		VALUES ($1, $2, $3, $4, $5) returning id
+	`
+	}
+
+	err = r.DB.QueryRow(query, queryParams...).Scan(&id)
 
 	if err != nil {
 		logger.Repo().AddFuncName("CreateThread").Error(ctx, err)

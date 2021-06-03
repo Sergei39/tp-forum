@@ -41,10 +41,11 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 		response := response.New(http.StatusNotFound, message)
 		return response, nil
 	}
-	if user != nil {
-		return nil, err
-	}
+	// if user != nil {
+	// 	return nil, err
+	// }
 
+	forum.User = user.Nickname
 	_, err = u.forumRepo.CreateForum(ctx, forum)
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (u *usecase) GetThreads(ctx context.Context, forumThreads models.ForumThrea
 		return response, nil
 	}
 
-	threads, err := u.GetThreads(ctx, forumThreads)
+	threads, err := u.forumRepo.GetThreads(ctx, forumThreads)
 	if err != nil {
 		return nil, err
 	}
