@@ -51,7 +51,16 @@ func (u *usecase) CreateThread(ctx context.Context, thread models.Thread, slug s
 		return response, nil
 	}
 
-	// TODO: проверка на существования ветки уже
+	oldThread, err := u.threadRepo.GetThreadBySlugOrId(ctx, thread.Slug)
+	if err != nil {
+		return nil, err
+	}
+	if thread.Slug != "" && oldThread != nil {
+		response := response.New(http.StatusConflict, oldThread)
+		return response, nil
+	}
+
+	thread.Forum = forum.Slug
 	id, err := u.threadRepo.CreateThread(ctx, thread)
 	if err != nil {
 		return nil, err
@@ -63,8 +72,7 @@ func (u *usecase) CreateThread(ctx context.Context, thread models.Thread, slug s
 }
 
 func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Response, error) {
-	// TODO: понять что все таки может прийти в запросе slug или id
-	thread, err := u.threadRepo.GetThreadBySlug(ctx, slug_or_id)
+	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slug_or_id)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +90,7 @@ func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Re
 }
 
 func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOrId string) (response.Response, error) {
-	// TODO: понять что все таки может прийти в запросе slug или id
-	threadOld, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	threadOld, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +116,8 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 }
 
 func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
-	// TODO: понять что все таки может прийти в запросе slug или id
 	// TODO: подумать как это сделать меньшим кол-вом запросов
-	thread, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +142,7 @@ func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string
 		}
 	}
 
-	thread, err = u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	thread, err = u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
 	}

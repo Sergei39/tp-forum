@@ -33,15 +33,16 @@ CREATE TABLE threads (
     message TEXT, -- описание ветки
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом голосов
-    slug TEXT,
-    created TIMESTAMP
+    slug CITEXT,
+    created TIMESTAMP with time zone
 );
 
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
-    parent INTEGER DEFAULT 0 REFERENCES posts(id) ON DELETE CASCADE,
-    forum INTEGER REFERENCES forums(id) ON DELETE CASCADE,
+    -- сделать привязку к posts
+    parent INTEGER DEFAULT 0,
+    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
     created TIMESTAMP,

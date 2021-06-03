@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	threadModel "github.com/forums/app/internal/thread"
 	"github.com/forums/app/models"
@@ -56,37 +57,38 @@ func (r *repo) CreateThread(ctx context.Context, thread models.Thread) (id int, 
 	return id, nil
 }
 
-func (r *repo) GetThreadBySlug(ctx context.Context, slug string) (*models.Thread, error) {
+func (r *repo) GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*models.Thread, error) {
 
 	thread := new(models.Thread)
 	query :=
 		`
-		SELECT th.id, th.title, th.user_create, f.title, 
-		th.message, count(v), th.slug, th.created
+		SELECT th.id, th.title, th.user_create, th.forum, 
+		th.message, th.slug, th.created
 
-		FROM thread as th
-		JOIN forums as f
-		ON f.id = th.forum
-		JOIN votes as v
-		ON th.id = v.thread
-		WHERE th.slug = $1
+		FROM threads as th
 	`
-	err := r.DB.QueryRow(query, slug).Scan(
+
+	if _, err := strconv.Atoi(slugOrId); err == nil {
+		query += " WHERE th.id = $1"
+	} else {
+		query += " WHERE th.slug = $1"
+	}
+
+	err := r.DB.QueryRow(query, slugOrId).Scan(
 		&thread.Id,
 		&thread.Title,
 		&thread.Author,
 		&thread.Forum,
 		&thread.Message,
-		&thread.Votes,
 		&thread.Slug,
 		&thread.Created,
 	)
 	if err == sql.ErrNoRows {
-		logger.Repo().Info(ctx, logger.Fields{"thread": "not forum"})
+		logger.Repo().Info(ctx, logger.Fields{"thread": "not thread"})
 		return nil, nil
 	}
 	if err != nil {
-		logger.Repo().AddFuncName("GetThreadBySlug").Error(ctx, err)
+		logger.Repo().AddFuncName("GetThreadBySlugOrId").Error(ctx, err)
 		return nil, err
 	}
 

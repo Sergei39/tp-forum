@@ -26,9 +26,9 @@ type ThreadUsecase interface {
 
 type ThreadRepo interface {
 	CreateThread(ctx context.Context, thread models.Thread) (int, error)
-	GetThreadBySlug(ctx context.Context, slug string) (*models.Thread, error)
 	UpdateThreadBySlug(ctx context.Context, thread models.Thread) error
 	UpdateVote(ctx context.Context, vote models.Vote) error
 	CheckVote(ctx context.Context, vote models.Vote) (int, bool, error)
 	AddVote(ctx context.Context, vote models.Vote) error
+	GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*models.Thread, error)
 }

@@ -10,6 +10,7 @@ import (
 	threadModel "github.com/forums/app/internal/thread"
 	userModel "github.com/forums/app/internal/user"
 	"github.com/forums/app/models"
+	"github.com/forums/utils/logger"
 	"github.com/forums/utils/response"
 )
 
@@ -97,13 +98,18 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 }
 
 func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error) {
-	// TODO: добавить добавление форума в пост перед добавлением в бд
 	// TODO: создание даты
 
-	thread, err := u.threadRepo.GetThreadBySlug(ctx, slugOrId)
+	if len(posts) == 0 {
+		response := response.New(http.StatusCreated, posts)
+		return response, nil
+	}
+
+	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
 	}
+
 	if thread == nil {
 		message := models.Message{
 			Message: "Can't find thread with id #" + slugOrId + "\n",
@@ -112,10 +118,12 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		return response, nil
 	}
 
-	for i, post := range posts {
+	logger.Usecase().Debug(ctx, logger.Fields{"forum slug": thread.Forum})
+	for i := range posts {
 		posts[i].Thread = thread.Id
+		posts[i].Forum = thread.Forum
 
-		id, err := u.postRepo.CreatePost(ctx, post)
+		id, err := u.postRepo.CreatePost(ctx, posts[i])
 		if err != nil {
 			return nil, err
 		}
@@ -125,6 +133,6 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 
 	// TODO: сделать проверку на то что parent валидный
 
-	response := response.New(http.StatusOK, posts)
+	response := response.New(http.StatusCreated, posts)
 	return response, nil
 }

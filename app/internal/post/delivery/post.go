@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -23,17 +24,19 @@ func NewPostHandler(postUsecase postModel.PostUsecase) postModel.PostHandler {
 
 func (h *Handler) CreatePosts(c echo.Context) error {
 	ctx := models.GetContext(c)
+	logger.Delivery().AddFuncName("CreatePosts").InlineDebug(ctx, "request")
 
-	posts := new([]models.Post)
-	if err := c.Bind(posts); err != nil {
+	posts := make([]models.Post, 0)
+	// с этим работает при массивах и пустых тоже
+	if err := json.NewDecoder(c.Request().Body).Decode(&posts); err != nil {
 		sendErr := errors.New(http.StatusBadRequest, err.Error())
 		logger.Delivery().Error(ctx, sendErr)
 		return c.NoContent(sendErr.Code())
 	}
 	slug := c.Param("slug_or_id")
-	logger.Delivery().Info(ctx, logger.Fields{"request data": *posts})
+	logger.Delivery().Info(ctx, logger.Fields{"request data": posts, "slug_or_id": slug})
 
-	response, err := h.postUsecase.CreatePosts(ctx, *posts, slug)
+	response, err := h.postUsecase.CreatePosts(ctx, posts, slug)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}

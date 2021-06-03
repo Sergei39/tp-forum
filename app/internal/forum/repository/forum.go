@@ -112,7 +112,8 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 }
 
 func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads) ([]models.Thread, error) {
-	// TODO: доделать правильный запрос
+	// TODO: подумать как здесь можно сделать покрасивее
+	var queryParams []interface{}
 	query :=
 		`
 		SELECT DISTINCT th.id, th.title, th.user_create, th.forum, 
@@ -120,16 +121,19 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 		FROM threads as th
 		WHERE th.forum = $1
 	`
+	queryParams = append(queryParams, forumThreads.Slug)
 
 	if forumThreads.Desc {
 		if forumThreads.Since != "" {
-			query += " AND th.created >= " + forumThreads.Since
+			query += " AND th.created <= $2"
+			queryParams = append(queryParams, forumThreads.Since)
 		}
 
 		query += " ORDER BY th.created DESC"
 	} else {
 		if forumThreads.Since != "" {
-			query += " AND th.created <= " + forumThreads.Since
+			query += " AND th.created >= $2"
+			queryParams = append(queryParams, forumThreads.Since)
 		}
 		query += " ORDER BY th.created"
 	}
@@ -137,6 +141,8 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	if forumThreads.Limit != 0 {
 		query += " LIMIT " + strconv.Itoa(forumThreads.Limit)
 	}
+
+	logger.Repo().Debug(ctx, logger.Fields{"query": query})
 	// query :=
 	// 	`
 	// 	SELECT DISTINCT th.id, th.title, th.user_create, th.forum,
@@ -149,7 +155,7 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	// 	ORDER BY th.created;
 	// `
 
-	threadsDB, err := r.DB.Query(query, forumThreads.Slug)
+	threadsDB, err := r.DB.Query(query, queryParams...)
 	if err != nil {
 		logger.Repo().AddFuncName("GetThreads").Error(ctx, err)
 		return nil, err

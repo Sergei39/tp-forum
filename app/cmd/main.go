@@ -68,12 +68,12 @@ func router(h Handler) {
 	serviceGroup.POST("/clear", h.service.ClearDb)
 	serviceGroup.GET("/status", h.service.StatusDb)
 
-	threadGroup := apiGroup.Group("/thraed")
-	// threadGroup.POST("/:slag_or_id/create", h.thread.CreateThread)
-	threadGroup.GET("/:slag_or_id/details", h.thread.GetDetails)
-	threadGroup.POST("/:slag_or_id/details", h.thread.UpdateDetails)
-	threadGroup.GET("/:slag_or_id/posts", h.thread.GetPosts)
-	threadGroup.POST("/:slag_or_id/vote", h.thread.Vote)
+	threadGroup := apiGroup.Group("/thread")
+	threadGroup.POST("/:slug_or_id/create", h.post.CreatePosts)
+	threadGroup.GET("/:slug_or_id/details", h.thread.GetDetails)
+	threadGroup.POST("/:slug_or_id/details", h.thread.UpdateDetails)
+	threadGroup.GET("/:slug_or_id/posts", h.thread.GetPosts)
+	threadGroup.POST("/:slug_or_id/vote", h.thread.Vote)
 }
 
 func main() {

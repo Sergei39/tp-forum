@@ -71,11 +71,12 @@ func (r *repo) CreatePost(ctx context.Context, post models.Post) (int, error) {
 
 	query :=
 		`
-		INSERT INTO posts (parent, author, message, forum, thread) VALUES
+		INSERT INTO posts (parent, user_create, message, forum, thread) VALUES
 		($1, $2, $3, $4, $5) returning id
 	`
 
 	id := new(int)
+	logger.Repo().Debug(ctx, logger.Fields{"forum slug": post.Forum})
 	err := r.DB.QueryRow(query,
 		post.Parent,
 		post.Author,
