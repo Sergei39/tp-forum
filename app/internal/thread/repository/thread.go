@@ -173,8 +173,7 @@ func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
 	return nil
 }
 
-func (r *repo) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]models.Post, error) {
-	// TODO: подумать как здесь можно сделать покрасивее
+func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
 	var queryParams []interface{}
 	query :=
 		`
@@ -186,61 +185,168 @@ func (r *repo) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]
 
 	queryParams = append(queryParams, threadPosts.ThreadId)
 
+	if threadPosts.Desc {
+		if threadPosts.Since != "" {
+			query += " AND p.tree < (SELECT p2.tree from posts AS p2 WHERE p2.id = $2)"
+			queryParams = append(queryParams, threadPosts.Since)
+		}
+
+		query += " ORDER BY p.tree[0] DESC, p.tree DESC"
+	} else {
+		if threadPosts.Since != "" {
+			query += " AND p.tree > (SELECT p2.tree from posts AS p2 WHERE p2.id = $2)"
+			queryParams = append(queryParams, threadPosts.Since)
+		}
+		query += " ORDER BY p.tree"
+	}
+
+	if threadPosts.Limit != "" {
+		query += " LIMIT " + threadPosts.Limit
+	}
+
+	return query, queryParams
+}
+
+const selectParentTreeLimitAsc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.tree[1] IN (
+		SELECT p2.tree[1]
+		FROM posts p2
+		WHERE p2.thread = $1 AND p2.parent = 0
+		ORDER BY p2.tree
+		LIMIT $2
+	)
+	ORDER BY p.tree
+`
+
+const selectParentTreeLimitDesc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.tree[1] IN (
+		SELECT p2.tree[1]
+		FROM posts p2
+		WHERE p2.thread = $1 AND p2.parent = 0
+		ORDER BY p2.tree DESC
+		LIMIT $2
+	)
+	ORDER BY p.tree[1] DESC, p.tree ASC
+`
+
+const selectParentTreeSinceLimitAsc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.tree[1] IN (
+		SELECT p2.tree[1]
+		FROM posts p2
+		WHERE p2.thread = $1 AND p2.parent = 0 AND p2.tree[1] > (SELECT p3.tree[1] from posts p3 where p3.id = $2)
+		ORDER BY p2.tree
+		LIMIT $3
+	)
+	ORDER BY p.tree
+`
+
+const selectParentTreeSinceLimitDesc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.tree[1] IN (
+		SELECT p2.tree[1]
+		FROM posts p2
+		WHERE p2.thread = $1 AND p2.parent = 0 AND p2.tree[1] < (SELECT p3.tree[1] from posts p3 where p3.id = $2)
+		ORDER BY p2.tree DESC
+		LIMIT $3
+	)
+	ORDER BY p.tree[1] DESC, p.tree ASC
+`
+
+func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
+	var queryParams []interface{}
+	var query string
+
+	queryParams = append(queryParams, threadPosts.ThreadId)
+
+	if threadPosts.Desc {
+		if threadPosts.Since != "" {
+			query = selectParentTreeSinceLimitDesc
+			queryParams = append(queryParams, threadPosts.Since)
+		} else {
+			query = selectParentTreeLimitDesc
+		}
+	} else {
+		if threadPosts.Since != "" {
+			query = selectParentTreeSinceLimitAsc
+			queryParams = append(queryParams, threadPosts.Since)
+		} else {
+			query = selectParentTreeLimitAsc
+		}
+	}
+
+	if threadPosts.Limit != "" {
+		queryParams = append(queryParams, threadPosts.Limit)
+	} else {
+		queryParams = append(queryParams, "ALL")
+	}
+
+	return query, queryParams
+}
+
+func (r *repo) flatSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
+	var queryParams []interface{}
+	query :=
+		`
+		SELECT p.id, p.parent, p.user_create, p.message,
+		p.is_edited, p.forum, p.thread, p.created
+		FROM posts as p
+		WHERE p.thread = $1
+	`
+
+	queryParams = append(queryParams, threadPosts.ThreadId)
+
+	if threadPosts.Desc {
+		if threadPosts.Since != "" {
+			query += " AND p.id < $2"
+			queryParams = append(queryParams, threadPosts.Since)
+		}
+
+		query += " ORDER BY p.id DESC"
+	} else {
+		if threadPosts.Since != "" {
+			query += " AND p.id > $2"
+			queryParams = append(queryParams, threadPosts.Since)
+		}
+		query += " ORDER BY p.id"
+	}
+
+	if threadPosts.Limit != "" {
+		query += " LIMIT " + threadPosts.Limit
+	}
+
+	return query, queryParams
+}
+
+func (r *repo) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]models.Post, error) {
+	// TODO: подумать как здесь можно сделать покрасивее
+	var queryParams []interface{}
+	var query string
+
+	queryParams = append(queryParams, threadPosts.ThreadId)
+
 	if threadPosts.Sort == "" {
 		threadPosts.Sort = "flat"
 	}
 	switch threadPosts.Sort {
 	case "tree":
-		if threadPosts.Desc {
-			if threadPosts.Since != "" {
-				query += " AND p.id < $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-
-			query += " ORDER BY p.tree[0] DESC, p.tree DESC"
-		} else {
-			if threadPosts.Since != "" {
-				query += " AND p.id > $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-			query += " ORDER BY p.tree"
-		}
+		query, queryParams = r.treeSort(ctx, threadPosts)
 
 	case "parent_tree":
-		if threadPosts.Desc {
-			if threadPosts.Since != "" {
-				query += " AND p.id < $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-
-			query += " ORDER BY p.tree[1] DESC, p.tree ASC"
-		} else {
-			if threadPosts.Since != "" {
-				query += " AND p.id > $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-			query += " ORDER BY p.tree"
-		}
+		query, queryParams = r.parentTreeSort(ctx, threadPosts)
 
 	case "flat":
-		if threadPosts.Desc {
-			if threadPosts.Since != "" {
-				query += " AND p.id < $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-
-			query += " ORDER BY p.id DESC"
-		} else {
-			if threadPosts.Since != "" {
-				query += " AND p.id > $2"
-				queryParams = append(queryParams, threadPosts.Since)
-			}
-			query += " ORDER BY p.id"
-		}
-	}
-
-	if threadPosts.Limit != "" {
-		query += " LIMIT " + threadPosts.Limit
+		query, queryParams = r.flatSort(ctx, threadPosts)
 	}
 
 	logger.Repo().Debug(ctx, logger.Fields{"query": query})
