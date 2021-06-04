@@ -18,9 +18,9 @@ CREATE TABLE users (
 CREATE TABLE forums (
     id SERIAL PRIMARY KEY,
     -- user_create TEXT,
-    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE,
+    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     title TEXT,
-    slug CITEXT UNIQUE -- человекочетаемый URL
+    slug CITEXT UNIQUE NOT NULL -- человекочетаемый URL
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом сообщений и кол-вом обсуждений
 );
@@ -28,12 +28,12 @@ CREATE TABLE forums (
 CREATE TABLE threads (
     id SERIAL PRIMARY KEY,
     title TEXT,
-    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE,
-    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE,
+    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
+    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE ,
     message TEXT, -- описание ветки
     -- возможная оптимизация в будущем
     -- создать поля с кол-вом голосов
-    slug CITEXT,
+    slug CITEXT NOT NULL,
     created TIMESTAMP with time zone
 );
 
@@ -41,18 +41,19 @@ CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
     -- сделать привязку к posts
-    parent INTEGER DEFAULT 0,
-    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE,
-    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE,
-    thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
-    created TIMESTAMP,
+    parent INTEGER DEFAULT 0 NOT NULL,
+    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
+    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
+    thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
+    created TIMESTAMP with time zone,
     message TEXT,
-    is_edited BOOLEAN DEFAULT FALSE
+    is_edited BOOLEAN DEFAULT FALSE,
+    tree INTEGER[]
 );
 
 CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
-    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE,
-    thread INTEGER REFERENCES threads(id) ON DELETE CASCADE,
-    voice INTEGER
+    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
+    thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
+    voice INTEGER NOT NULL
 );

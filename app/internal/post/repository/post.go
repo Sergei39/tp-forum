@@ -7,6 +7,7 @@ import (
 	postModel "github.com/forums/app/internal/post"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
+	"github.com/lib/pq"
 )
 
 type repo struct {
@@ -67,14 +68,15 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 	return nil
 }
 
-func (r *repo) CreatePost(ctx context.Context, post models.Post) (int, error) {
+func (r *repo) CreatePost(ctx context.Context, post models.Post, nest []int64) (int, error) {
 
 	query :=
 		`
-		INSERT INTO posts (parent, user_create, message, forum, thread) VALUES
-		($1, $2, $3, $4, $5) returning id
+		INSERT INTO posts (parent, user_create, message, forum, thread, created, tree) VALUES
+		($1, $2, $3, $4, $5, $6, $7) returning id
 	`
 
+	logger.Repo().AddFuncName("CreatePost").Debug(ctx, logger.Fields{"nesting": nest})
 	id := new(int)
 	logger.Repo().Debug(ctx, logger.Fields{"forum slug": post.Forum})
 	err := r.DB.QueryRow(query,
@@ -82,7 +84,9 @@ func (r *repo) CreatePost(ctx context.Context, post models.Post) (int, error) {
 		post.Author,
 		post.Message,
 		post.Forum,
-		post.Thread).Scan(&id)
+		post.Thread,
+		post.Created,
+		pq.Array(nest)).Scan(&id)
 
 	if err != nil {
 		logger.Repo().AddFuncName("CreatePost").Error(ctx, err)
@@ -90,4 +94,52 @@ func (r *repo) CreatePost(ctx context.Context, post models.Post) (int, error) {
 	}
 
 	return *id, nil
+}
+
+func (r *repo) GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nesting, error) {
+
+	query :=
+		`
+		SELECT tree
+		FROM posts
+		WHERE parent = $1
+		ORDER BY id DESC
+		LIMIT 1
+	`
+
+	var ret pq.Int64Array
+	nesting := new(models.Nesting)
+	err := r.DB.QueryRow(query, id).Scan(
+		&ret,
+	)
+
+	if err == sql.ErrNoRows {
+
+		query :=
+			`
+			SELECT tree
+			FROM posts
+			WHERE id = $1
+		`
+
+		err = r.DB.QueryRow(query, id).Scan(
+			&ret,
+		)
+
+		if err == sql.ErrNoRows {
+			logger.Repo().Info(ctx, logger.Fields{"tree": "not tree"})
+			return &models.Nesting{}, nil
+		}
+		nesting.Parent = ([]int64)(ret)
+	} else {
+		nesting.Last = ([]int64)(ret)
+	}
+
+	if err != nil {
+		logger.Repo().AddFuncName("GetPostAndChildLastArr").Error(ctx, err)
+		return nil, err
+	}
+
+	logger.Repo().Debug(ctx, logger.Fields{"nesting": *nesting})
+	return nesting, nil
 }

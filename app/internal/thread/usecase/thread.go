@@ -85,7 +85,7 @@ func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Re
 		return response, nil
 	}
 
-	response := response.New(http.StatusCreated, thread)
+	response := response.New(http.StatusOK, thread)
 	return response, nil
 }
 
@@ -111,7 +111,7 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 		return nil, err
 	}
 
-	response := response.New(http.StatusCreated, threadOld)
+	response := response.New(http.StatusOK, threadOld)
 	return response, nil
 }
 
@@ -146,6 +146,30 @@ func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string
 	if err != nil {
 		return nil, err
 	}
-	response := response.New(http.StatusCreated, thread)
+	response := response.New(http.StatusOK, thread)
+	return response, nil
+}
+
+func (u *usecase) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) (response.Response, error) {
+	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, threadPosts.SlugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	if thread == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + threadPosts.SlugOrId + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	threadPosts.ThreadId = thread.Id
+	posts, err := u.threadRepo.GetPosts(ctx, threadPosts)
+	if err != nil {
+		return nil, err
+	}
+
+	response := response.New(http.StatusOK, posts)
 	return response, nil
 }

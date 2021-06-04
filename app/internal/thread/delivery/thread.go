@@ -75,8 +75,30 @@ func (h *Handler) UpdateDetails(c echo.Context) error {
 }
 
 func (h *Handler) GetPosts(c echo.Context) error {
-	// TODO:
-	return c.JSON(http.StatusOK, nil)
+	ctx := models.GetContext(c)
+
+	threadPosts := new(models.ThreadPosts)
+
+	threadPosts.SlugOrId = c.Param("slug_or_id")
+	threadPosts.Limit = c.QueryParam("limit")
+	threadPosts.Since = c.QueryParam("since")
+	threadPosts.Sort = c.QueryParam("sort")
+
+	desc := c.QueryParam("desc")
+	if desc == "false" || desc == "" {
+		threadPosts.Desc = false
+	} else {
+		threadPosts.Desc = true
+	}
+
+	logger.Delivery().Info(ctx, logger.Fields{"request data": *threadPosts})
+
+	response, err := h.threadUsecase.GetPosts(ctx, *threadPosts)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(response.Code(), response.Body())
 }
 
 func (h *Handler) Vote(c echo.Context) error {

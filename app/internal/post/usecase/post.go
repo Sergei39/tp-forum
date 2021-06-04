@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	forumModel "github.com/forums/app/internal/forum"
 	postModel "github.com/forums/app/internal/post"
@@ -98,7 +99,7 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 }
 
 func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error) {
-	// TODO: создание даты
+	timeNow := time.Now()
 
 	if len(posts) == 0 {
 		response := response.New(http.StatusCreated, posts)
@@ -122,8 +123,13 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 	for i := range posts {
 		posts[i].Thread = thread.Id
 		posts[i].Forum = thread.Forum
+		posts[i].Created = timeNow
+		nest, err := u.createTreeArray(ctx, int(posts[i].Parent))
+		if err != nil {
+			return nil, err
+		}
 
-		id, err := u.postRepo.CreatePost(ctx, posts[i])
+		id, err := u.postRepo.CreatePost(ctx, posts[i], nest)
 		if err != nil {
 			return nil, err
 		}
@@ -135,4 +141,26 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 
 	response := response.New(http.StatusCreated, posts)
 	return response, nil
+}
+
+func (u *usecase) createTreeArray(ctx context.Context, id int) ([]int64, error) {
+	nest, err := u.postRepo.GetPostAndChildLastArr(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nest.Last) != 0 {
+		nest.Last[len(nest.Last)-1]++
+		return nest.Last, nil
+	}
+
+	if len(nest.Parent) != 0 {
+		tecNest := nest.Parent
+		tecNest = append(tecNest, 1)
+		return tecNest, nil
+	}
+
+	tecNest := make([]int64, 0)
+	tecNest = append(tecNest, 1)
+	return tecNest, nil
 }
