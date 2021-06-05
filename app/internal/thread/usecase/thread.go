@@ -8,7 +8,10 @@ import (
 	threadModel "github.com/forums/app/internal/thread"
 	userModel "github.com/forums/app/internal/user"
 	"github.com/forums/app/models"
+	"github.com/forums/utils/logger"
 	"github.com/forums/utils/response"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx"
 )
 
 type usecase struct {
@@ -89,18 +92,6 @@ func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Re
 	return response, nil
 }
 
-func (u *usecase) fixData(newThread, oldThread models.Thread) models.Thread {
-	if newThread.Message == "" {
-		newThread.Message = oldThread.Message
-	}
-
-	if newThread.Title == "" {
-		newThread.Title = oldThread.Title
-	}
-
-	return newThread
-}
-
 func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOrId string) (response.Response, error) {
 	threadOld, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
@@ -133,8 +124,7 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 }
 
 func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
-	// TODO: подумать как это сделать меньшим кол-вом запросов
-	// TODO: убрать проверку и thread на бд
+	// TODO: сделать по красивее
 	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
@@ -148,38 +138,41 @@ func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string
 	}
 
 	vote.Thread = thread.Id
-	id, ok, err := u.threadRepo.CheckVote(ctx, vote)
+	err = u.threadRepo.AddVote(ctx, vote)
 	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		okAdd, err := u.threadRepo.AddVote(ctx, vote)
-		if err != nil {
-			return nil, err
-		}
+		logger.Usecase().AddFuncName("AddVote").Info(ctx, logger.Fields{"Error": err})
+		if pqErr, ok := err.(pgx.PgError); ok {
+			switch pqErr.Code {
+			case pgerrcode.ForeignKeyViolation: // проблемы с сохранением user
+				message := models.Message{
+					Message: "Can't find user with id #" + vote.User + "\n",
+				}
+				response := response.New(http.StatusNotFound, message)
+				return response, nil
 
-		// проблемы с сохранением user
-		if !okAdd {
-			message := models.Message{
-				Message: "Can't find user with id #" + vote.User + "\n",
+			case pgerrcode.UniqueViolation: // уже есть в бд, надо обновить
+				err = u.threadRepo.UpdateVote(ctx, vote)
+				if err != nil {
+					return nil, err
+				}
+
+				thread, err = u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
+				if err != nil {
+					return nil, err
+				}
+
+			default:
+				logger.Usecase().AddFuncName("AddVote").Error(ctx, err)
+				return nil, err
 			}
-			response := response.New(http.StatusNotFound, message)
-			return response, nil
 		}
+	} else {
+		if thread.Votes == nil {
+			thread.Votes = new(int)
+		}
+		*thread.Votes += vote.Voice
 	}
 
-	if ok {
-		vote.Id = id
-		err = u.threadRepo.UpdateVote(ctx, vote)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	thread, err = u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
-	if err != nil {
-		return nil, err
-	}
 	response := response.New(http.StatusOK, thread)
 	return response, nil
 }

@@ -41,9 +41,6 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 		response := response.New(http.StatusNotFound, message)
 		return response, nil
 	}
-	// if user != nil {
-	// 	return nil, err
-	// }
 
 	forum.User = user.Nickname
 	_, err = u.forumRepo.CreateForum(ctx, forum)

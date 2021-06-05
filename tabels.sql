@@ -56,7 +56,8 @@ CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
-    voice INTEGER NOT NULL
+    voice INTEGER NOT NULL,
+    UNIQUE (user_create, thread)
 );
 
 CREATE TABLE forums_users (

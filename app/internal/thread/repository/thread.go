@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx"
 
 	threadModel "github.com/forums/app/internal/thread"
@@ -121,11 +120,11 @@ func (r *repo) UpdateThreadBySlug(ctx context.Context, thread models.Thread) err
 func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
 	query :=
 		`
-		UPDATE votes SET user_create = $1, thread = $2, voice = $3
-		WHERE id = $4
+		UPDATE votes SET voice = $1
+		WHERE user_create = $2 AND thread = $3
 	`
 
-	_, err := r.DB.Exec(query, vote.User, vote.Thread, vote.Voice, vote.Id)
+	_, err := r.DB.Exec(query, vote.Voice, vote.User, vote.Thread)
 	if err != nil {
 		logger.Repo().AddFuncName("UpdateVote").Error(ctx, err)
 		return err
@@ -134,31 +133,7 @@ func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
 	return nil
 }
 
-func (r *repo) CheckVote(ctx context.Context, vote models.Vote) (int, bool, error) {
-	query :=
-		`
-		SELECT id
-		FROM votes
-		WHERE user_create = $1 AND thread = $2
-	`
-
-	id := new(int)
-	err := r.DB.QueryRow(query, vote.User, vote.Thread).Scan(&id)
-
-	if err == pgx.ErrNoRows {
-		logger.Repo().Info(ctx, logger.Fields{"vote": "not found"})
-		return 0, false, nil
-	}
-
-	if err != nil {
-		logger.Repo().AddFuncName("CheckVote").Error(ctx, err)
-		return 0, false, err
-	}
-
-	return *id, true, nil
-}
-
-func (r *repo) AddVote(ctx context.Context, vote models.Vote) (bool, error) {
+func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
 	id := new(int)
 
 	query :=
@@ -169,19 +144,11 @@ func (r *repo) AddVote(ctx context.Context, vote models.Vote) (bool, error) {
 	err := r.DB.QueryRow(query, vote.User, vote.Thread, vote.Voice).Scan(&id)
 
 	if err != nil {
-		logger.Repo().AddFuncName("AddVote").Info(ctx, logger.Fields{"Error": err})
-		if pqErr, ok := err.(pgx.PgError); ok {
-			switch pqErr.Code {
-			case pgerrcode.ForeignKeyViolation:
-				return false, nil
-			default:
-				logger.Repo().AddFuncName("AddVote").Error(ctx, err)
-				return false, err
-			}
-		}
+		return err
 	}
 
-	return true, nil
+	logger.Repo().AddFuncName("AddVote").Info(ctx, logger.Fields{"vote id": id})
+	return nil
 }
 
 func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
