@@ -2,12 +2,12 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	postModel "github.com/forums/app/internal/post"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
 	"github.com/jackc/pgx"
-	"github.com/lib/pq"
 )
 
 type repo struct {
@@ -74,77 +74,45 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 	return nil
 }
 
-func (r *repo) CreatePost(ctx context.Context, post models.Post, nest []int64) (*models.Post, error) {
+func (r *repo) CreatePosts(ctx context.Context, posts []models.Post) ([]models.Post, error) {
 
-	query :=
-		`
-		INSERT INTO posts (parent, user_create, message, forum, thread, created, tree) VALUES
-		($1, $2, $3, $4, $5, $6, $7) returning id, created
-	`
+	var queryParams []interface{}
+	query := "INSERT INTO posts (parent, user_create, message, forum, thread, created, tree) VALUES "
 
-	logger.Repo().AddFuncName("CreatePost").Debug(ctx, logger.Fields{"nesting": nest})
-	logger.Repo().Debug(ctx, logger.Fields{"forum slug": post.Forum})
-	err := r.DB.QueryRow(query,
-		post.Parent,
-		post.Author,
-		post.Message,
-		post.Forum,
-		post.Thread,
-		post.Created,
-		pq.Array(nest)).Scan(&post.Id, &post.Created)
+	for i, post := range posts {
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, (SELECT tree FROM posts WHERE id = $%d) || ARRAY[nextval('post_tree_id')])",
+			i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6, i*6+1)
 
+		if i != len(posts)-1 {
+			query += ","
+		}
+
+		queryParams = append(queryParams, post.Parent, post.Author, post.Message, post.Forum, post.Thread, post.Created)
+	}
+
+	query += " returning id, created"
+
+	logger.Repo().AddFuncName("CreatePosts").Debug(ctx, logger.Fields{"query": query})
+
+	postsDB, err := r.DB.Query(query, queryParams...)
 	if err != nil {
-		logger.Repo().AddFuncName("CreatePost").Error(ctx, err)
+		logger.Repo().AddFuncName("CreatePosts").Error(ctx, err)
 		return nil, err
 	}
 
-	return &post, nil
-}
-
-func (r *repo) GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nesting, error) {
-
-	query :=
-		`
-		SELECT tree
-		FROM posts
-		WHERE parent = $1
-		ORDER BY id DESC
-		LIMIT 1
-	`
-
-	var ret pq.Int64Array
-	nesting := new(models.Nesting)
-	err := r.DB.QueryRow(query, id).Scan(
-		&ret,
-	)
-
-	if err == pgx.ErrNoRows {
-
-		query :=
-			`
-			SELECT tree
-			FROM posts
-			WHERE id = $1
-		`
-
-		err = r.DB.QueryRow(query, id).Scan(
-			&ret,
+	i := 0
+	for postsDB.Next() {
+		err := postsDB.Scan(
+			&(posts[i].Id),
+			&(posts[i].Created),
 		)
 
-		if err == pgx.ErrNoRows {
-			logger.Repo().Info(ctx, logger.Fields{"tree": "not tree"})
-			return &models.Nesting{}, nil
+		if err != nil {
+			logger.Repo().AddFuncName("CreatePosts").Error(ctx, err)
+			return nil, err
 		}
-		nesting.Parent = ([]int64)(ret)
-	} else {
-		nesting.Last = ([]int64)(ret)
+		i++
 	}
 
-	if err != nil {
-		logger.Repo().AddFuncName("GetPostAndChildLastArr").Error(ctx, err)
-		return nil, err
-	}
-
-	logger.Repo().Debug(ctx, logger.Fields{"nesting": *nesting})
-	return nesting, nil
+	return posts, nil
 }

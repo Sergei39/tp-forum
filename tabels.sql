@@ -7,6 +7,10 @@ DROP TABLE threads CASCADE;
 DROP TABLE users CASCADE;
 DROP TABLE forums CASCADE;
 
+
+DROP SEQUENCE post_tree_id;
+CREATE SEQUENCE post_tree_id;
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     nickname CITEXT UNIQUE NOT NULL COLLATE "POSIX",
@@ -49,7 +53,7 @@ CREATE TABLE posts (
     created TIMESTAMP with time zone,
     message TEXT,
     is_edited BOOLEAN DEFAULT FALSE,
-    tree INTEGER[]
+    tree BIGINT[]
 );
 
 CREATE TABLE votes (

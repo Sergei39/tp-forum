@@ -164,21 +164,12 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		}
 	}
 
-	for i := range posts {
-		nest, err := u.createTreeArray(ctx, int(posts[i].Parent))
-		if err != nil {
-			return nil, err
-		}
-
-		post, err := u.postRepo.CreatePost(ctx, posts[i], nest)
-		if err != nil {
-			return nil, err
-		}
-
-		posts[i] = *post
+	postsDB, err := u.postRepo.CreatePosts(ctx, posts)
+	if err != nil {
+		return nil, err
 	}
 
-	response := response.New(http.StatusCreated, posts)
+	response := response.New(http.StatusCreated, postsDB)
 	return response, nil
 }
 
@@ -201,26 +192,4 @@ func (u *usecase) checkParent(ctx context.Context, threadId, parentId int) (bool
 	}
 
 	return true, nil
-}
-
-func (u *usecase) createTreeArray(ctx context.Context, id int) ([]int64, error) {
-	nest, err := u.postRepo.GetPostAndChildLastArr(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(nest.Last) != 0 {
-		nest.Last[len(nest.Last)-1]++
-		return nest.Last, nil
-	}
-
-	if len(nest.Parent) != 0 {
-		tecNest := nest.Parent
-		tecNest = append(tecNest, 1)
-		return tecNest, nil
-	}
-
-	tecNest := make([]int64, 0)
-	tecNest = append(tecNest, 1)
-	return tecNest, nil
 }
