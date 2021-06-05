@@ -2,19 +2,19 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
 	postModel "github.com/forums/app/internal/post"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
+	"github.com/jackc/pgx"
 	"github.com/lib/pq"
 )
 
 type repo struct {
-	DB *sql.DB
+	DB *pgx.ConnPool
 }
 
-func NewPostRepo(db *sql.DB) postModel.PostRepo {
+func NewPostRepo(db *pgx.ConnPool) postModel.PostRepo {
 	return &repo{
 		DB: db,
 	}
@@ -44,7 +44,7 @@ func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 		&post.Created,
 	)
 
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"post": "not post"})
 		return nil, nil
 	}
@@ -118,7 +118,7 @@ func (r *repo) GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nest
 		&ret,
 	)
 
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 
 		query :=
 			`
@@ -131,7 +131,7 @@ func (r *repo) GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nest
 			&ret,
 		)
 
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			logger.Repo().Info(ctx, logger.Fields{"tree": "not tree"})
 			return &models.Nesting{}, nil
 		}

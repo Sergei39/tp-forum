@@ -134,7 +134,7 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 
 func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
 	// TODO: подумать как это сделать меньшим кол-вом запросов
-	// TODO: убрать проверку user и thread на бд
+	// TODO: убрать проверку и thread на бд
 	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
@@ -147,27 +147,24 @@ func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string
 		return response, nil
 	}
 
-	user, err := u.userRepo.GetUserByName(ctx, vote.User)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		message := models.Message{
-			Message: "Can't find user with id #" + vote.User + "\n",
-		}
-		response := response.New(http.StatusNotFound, message)
-		return response, nil
-	}
-
 	vote.Thread = thread.Id
 	id, ok, err := u.threadRepo.CheckVote(ctx, vote)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
-		err = u.threadRepo.AddVote(ctx, vote)
+		okAdd, err := u.threadRepo.AddVote(ctx, vote)
 		if err != nil {
 			return nil, err
+		}
+
+		// проблемы с сохранением user
+		if !okAdd {
+			message := models.Message{
+				Message: "Can't find user with id #" + vote.User + "\n",
+			}
+			response := response.New(http.StatusNotFound, message)
+			return response, nil
 		}
 	}
 

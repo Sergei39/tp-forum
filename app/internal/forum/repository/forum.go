@@ -2,19 +2,19 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"strconv"
 
 	forumModel "github.com/forums/app/internal/forum"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
+	"github.com/jackc/pgx"
 )
 
 type repo struct {
-	DB *sql.DB
+	DB *pgx.ConnPool
 }
 
-func NewForumRepo(db *sql.DB) forumModel.ForumRepo {
+func NewForumRepo(db *pgx.ConnPool) forumModel.ForumRepo {
 	return &repo{
 		DB: db,
 	}
@@ -75,7 +75,8 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 		&forum.Threads,
 		&forum.Posts,
 	)
-	if err == sql.ErrNoRows {
+
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"forum": "not forum"})
 		return nil, nil
 	}

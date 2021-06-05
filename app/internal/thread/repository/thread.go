@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"strconv"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx"
 
 	threadModel "github.com/forums/app/internal/thread"
 	"github.com/forums/app/models"
@@ -11,10 +13,10 @@ import (
 )
 
 type repo struct {
-	DB *sql.DB
+	DB *pgx.ConnPool
 }
 
-func NewThreadRepo(db *sql.DB) threadModel.ThreadRepo {
+func NewThreadRepo(db *pgx.ConnPool) threadModel.ThreadRepo {
 	return &repo{
 		DB: db,
 	}
@@ -31,10 +33,10 @@ func (r *repo) CreateThread(ctx context.Context, thread models.Thread) (id int, 
 		thread.Forum,
 		thread.Slug,
 	)
-	if thread.Created != nil && *thread.Created != "" {
+	if thread.Created != nil {
 		query =
 			`
-		INSERT INTO threads (title, user_create, message, forum, slug, created) 
+		INSERT INTO threads (title, user_create, message, forum, slug, created)
 		VALUES ($1, $2, $3, $4, $5, $6) returning id
 	`
 		queryParams = append(queryParams, thread.Created)
@@ -87,7 +89,7 @@ func (r *repo) GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*model
 		&thread.Created,
 		&thread.Votes,
 	)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"thread": "not thread"})
 		return nil, nil
 	}
@@ -143,7 +145,7 @@ func (r *repo) CheckVote(ctx context.Context, vote models.Vote) (int, bool, erro
 	id := new(int)
 	err := r.DB.QueryRow(query, vote.User, vote.Thread).Scan(&id)
 
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"vote": "not found"})
 		return 0, false, nil
 	}
@@ -156,7 +158,7 @@ func (r *repo) CheckVote(ctx context.Context, vote models.Vote) (int, bool, erro
 	return *id, true, nil
 }
 
-func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
+func (r *repo) AddVote(ctx context.Context, vote models.Vote) (bool, error) {
 	id := new(int)
 
 	query :=
@@ -165,12 +167,21 @@ func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
 		VALUES ($1, $2, $3) returning id
 	`
 	err := r.DB.QueryRow(query, vote.User, vote.Thread, vote.Voice).Scan(&id)
+
 	if err != nil {
-		logger.Repo().AddFuncName("AddVote").Error(ctx, err)
-		return err
+		logger.Repo().AddFuncName("AddVote").Info(ctx, logger.Fields{"Error": err})
+		if pqErr, ok := err.(pgx.PgError); ok {
+			switch pqErr.Code {
+			case pgerrcode.ForeignKeyViolation:
+				return false, nil
+			default:
+				logger.Repo().AddFuncName("AddVote").Error(ctx, err)
+				return false, err
+			}
+		}
 	}
 
-	return nil
+	return true, nil
 }
 
 func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {

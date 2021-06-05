@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/labstack/echo/v4"
@@ -34,7 +33,7 @@ import (
 	threadDelivery "github.com/forums/app/internal/thread/delivery"
 	userDelivery "github.com/forums/app/internal/user/delivery"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx"
 )
 
 type Handler struct {
@@ -83,18 +82,24 @@ func main() {
 	e := echo.New()
 	e.Use(custMiddleware.LogMiddleware)
 
-	dsn := fmt.Sprintf("user=%s password=%s dbname=%s", config.DBUser, config.DBPass, config.DBName)
-	db, err := sql.Open(config.PostgresDB, dsn)
+	connectionString := "postgres://" + config.DBUser + ":" + config.DBPass +
+		"@localhost/" + config.DBName + "?sslmode=disable"
+
+	configDB, err := pgx.ParseURI(connectionString)
 	if err != nil {
-		logger.Start().Fatal(ctx, err)
+		fmt.Println(err)
+		return
 	}
 
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(3)
+	db, err := pgx.NewConnPool(
+		pgx.ConnPoolConfig{
+			ConnConfig:     configDB,
+			MaxConnections: 2000,
+		})
 
-	err = db.Ping()
 	if err != nil {
-		logger.Start().Fatal(ctx, err)
+		fmt.Println(err)
+		return
 	}
 
 	userRepo := userRepository.NewUserRepo(db)

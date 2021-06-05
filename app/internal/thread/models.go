@@ -30,7 +30,7 @@ type ThreadRepo interface {
 	UpdateThreadBySlug(ctx context.Context, thread models.Thread) error
 	UpdateVote(ctx context.Context, vote models.Vote) error
 	CheckVote(ctx context.Context, vote models.Vote) (int, bool, error)
-	AddVote(ctx context.Context, vote models.Vote) error
+	AddVote(ctx context.Context, vote models.Vote) (bool, error)
 	GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*models.Thread, error)
 	GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]models.Post, error)
 }

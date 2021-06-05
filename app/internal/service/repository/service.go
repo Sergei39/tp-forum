@@ -2,18 +2,18 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
 	serviceModel "github.com/forums/app/internal/service"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
+	"github.com/jackc/pgx"
 )
 
 type repo struct {
-	DB *sql.DB
+	DB *pgx.ConnPool
 }
 
-func NewServiceRepo(db *sql.DB) serviceModel.ServiceRepo {
+func NewServiceRepo(db *pgx.ConnPool) serviceModel.ServiceRepo {
 	return &repo{
 		DB: db,
 	}

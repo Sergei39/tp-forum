@@ -2,18 +2,18 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
 	userModel "github.com/forums/app/internal/user"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
+	"github.com/jackc/pgx"
 )
 
 type repo struct {
-	DB *sql.DB
+	DB *pgx.ConnPool
 }
 
-func NewUserRepo(db *sql.DB) userModel.UserRepo {
+func NewUserRepo(db *pgx.ConnPool) userModel.UserRepo {
 	return &repo{
 		DB: db,
 	}
@@ -28,7 +28,7 @@ func (r *repo) GetUserByNameAndEmail(ctx context.Context, name, email string) ([
 		FROM users WHERE nickname = $1 OR email = $2
 	`
 	usersDB, err := r.DB.Query(query, name, email)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"user": "not user with nickname and email"})
 		return nil, nil
 	}
@@ -75,7 +75,7 @@ func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, er
 		&user.About,
 		&user.Email,
 	)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"user": "not user with nickname"})
 		return nil, nil
 	}
@@ -103,7 +103,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, 
 		&user.About,
 		&user.Email,
 	)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"user": "not user with email"})
 		return nil, nil
 	}
