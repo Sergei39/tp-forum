@@ -14,6 +14,8 @@ import (
 	"github.com/forums/app/models"
 	"github.com/forums/utils/logger"
 	"github.com/forums/utils/response"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx"
 )
 
 type usecase struct {
@@ -149,24 +151,28 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 			response := response.New(http.StatusConflict, message)
 			return response, nil
 		}
-
-		user, err := u.userRepo.GetUserByName(ctx, posts[i].Author)
-		if err != nil {
-			return nil, err
-		}
-
-		if user == nil {
-			message := models.Message{
-				Message: "Can't find post author by nickname: #" + posts[i].Author + "\n",
-			}
-			response := response.New(http.StatusNotFound, message)
-			return response, nil
-		}
 	}
 
 	postsDB, err := u.postRepo.CreatePosts(ctx, posts)
 	if err != nil {
-		return nil, err
+		logger.Usecase().AddFuncName("CreatePosts").Info(ctx, logger.Fields{"Error": err})
+		if pqErr, ok := err.(pgx.PgError); ok {
+			logger.Usecase().AddFuncName("CreatePosts").Info(ctx, logger.Fields{"Error Code": pqErr.Code})
+			switch pqErr.Code {
+			case pgerrcode.TransactionRollback: // проблемы с сохранением user
+				message := models.Message{
+					Message: "Can't find user\n",
+				}
+				response := response.New(http.StatusNotFound, message)
+				return response, nil
+
+			default:
+				logger.Usecase().AddFuncName("CreatePosts").Error(ctx, err)
+				return nil, err
+			}
+		} else {
+			logger.Usecase().AddFuncName("CreatePosts").Info(ctx, logger.Fields{"Error": err})
+		}
 	}
 
 	response := response.New(http.StatusCreated, postsDB)
