@@ -89,6 +89,18 @@ func (u *usecase) GetThread(ctx context.Context, slug_or_id string) (response.Re
 	return response, nil
 }
 
+func (u *usecase) fixData(newThread, oldThread models.Thread) models.Thread {
+	if newThread.Message == "" {
+		newThread.Message = oldThread.Message
+	}
+
+	if newThread.Title == "" {
+		newThread.Title = oldThread.Title
+	}
+
+	return newThread
+}
+
 func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOrId string) (response.Response, error) {
 	threadOld, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
@@ -103,8 +115,13 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 		return response, nil
 	}
 
-	threadOld.Title = thread.Title
-	threadOld.Message = thread.Message
+	if thread.Title != "" {
+		threadOld.Title = thread.Title
+	}
+
+	if thread.Message != "" {
+		threadOld.Message = thread.Message
+	}
 
 	err = u.threadRepo.UpdateThreadBySlug(ctx, *threadOld)
 	if err != nil {
@@ -117,9 +134,29 @@ func (u *usecase) UpdateThread(ctx context.Context, thread models.Thread, slugOr
 
 func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string) (response.Response, error) {
 	// TODO: подумать как это сделать меньшим кол-вом запросов
+	// TODO: убрать проверку user и thread на бд
 	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
+	}
+	if thread == nil {
+		message := models.Message{
+			Message: "Can't find thread with id #" + slugOrId + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
+	}
+
+	user, err := u.userRepo.GetUserByName(ctx, vote.User)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		message := models.Message{
+			Message: "Can't find user with id #" + vote.User + "\n",
+		}
+		response := response.New(http.StatusNotFound, message)
+		return response, nil
 	}
 
 	vote.Thread = thread.Id

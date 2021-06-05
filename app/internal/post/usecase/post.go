@@ -95,7 +95,7 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 		return response, nil
 	}
 
-	if post.Message == request.Message {
+	if post.Message == request.Message || request.Message == "" {
 		response := response.New(http.StatusOK, post)
 		return response, nil
 	}

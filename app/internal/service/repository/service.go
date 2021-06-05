@@ -23,7 +23,7 @@ func (r *repo) ClearDb(ctx context.Context) error {
 
 	query :=
 		`
-		TRUNCATE users, forums, threads, posts, votes
+		TRUNCATE users, forums, threads, posts, forums_users, votes CASCADE
 	`
 	result, err := r.DB.Exec(query)
 	if err != nil {
