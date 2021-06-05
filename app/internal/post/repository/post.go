@@ -28,7 +28,7 @@ func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 		p.is_edited, f.slug, p.thread, p.created
 		FROM posts as p
 		JOIN forums as f
-		ON p.forum = f.id
+		ON p.forum = f.slug
 		WHERE p.id = $1
 	`
 

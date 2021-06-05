@@ -1,5 +1,6 @@
 CREATE EXTENSION citext;
 
+DROP TABLE forums_users CASCADE;
 DROP TABLE votes CASCADE;
 DROP TABLE posts CASCADE;
 DROP TABLE threads CASCADE;
@@ -8,7 +9,7 @@ DROP TABLE forums CASCADE;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    nickname CITEXT UNIQUE NOT NULL,
+    nickname CITEXT UNIQUE NOT NULL COLLATE "POSIX",
     fullname TEXT,
     about TEXT,
     email CITEXT UNIQUE
@@ -56,4 +57,9 @@ CREATE TABLE votes (
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
     voice INTEGER NOT NULL
+);
+
+CREATE TABLE forums_users (
+    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
+    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL
 );

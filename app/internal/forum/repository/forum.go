@@ -37,6 +37,20 @@ func (r *repo) CreateForum(ctx context.Context, forum models.Forum) (id int, err
 		return 0, err
 	}
 
+	query =
+		`
+		INSERT INTO forums_users (user_create, forum) 
+		VALUES ($1, $2)
+	`
+	_, err = r.DB.Exec(query,
+		forum.User,
+		forum.Slug)
+
+	if err != nil {
+		logger.Repo().AddFuncName("CreateForum").Error(ctx, err)
+		return 0, err
+	}
+
 	logger.Repo().Debug(ctx, logger.Fields{"forum id": id})
 	return id, nil
 }
@@ -45,14 +59,21 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 	forum := new(models.Forum)
 	query :=
 		`
-		SELECT f.title, f.user_create, f.slug
+		SELECT f.title, f.user_create, f.slug, COUNT(DISTINCT th.id), count(DISTINCT p.id)
 		FROM forums as f
+		LEFT JOIN threads as th
+		ON f.slug = th.forum
+		LEFT JOIN posts as p
+		ON f.slug = p.forum
 		WHERE f.slug = $1
+		GROUP BY f.title, f.user_create, f.slug
 	`
 	err := r.DB.QueryRow(query, slug).Scan(
 		&forum.Title,
 		&forum.User,
 		&forum.Slug,
+		&forum.Threads,
+		&forum.Posts,
 	)
 	if err == sql.ErrNoRows {
 		logger.Repo().Info(ctx, logger.Fields{"forum": "not forum"})
@@ -68,21 +89,44 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 }
 
 func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]models.User, error) {
-	// TODO: доделать правильный запрос
+	var queryParams []interface{}
 	query :=
 		`
 		SELECT DISTINCT u.nickname, u.fullname, u.about, u.email
-		FROM forum as f
-		JOIN threads as th 
-		ON th.forum = f.id
-		JOIN posts as p
-		ON p.forum = f.id
-		JOIN users as u
-		ON u.nickname = th.user_create OR u.nickname = p.user_create
+		FROM forums as f
+		JOIN threads th
+		ON th.forum = f.slug
+		LEFT JOIN posts p
+		ON p.thread = th.id
+		JOIN users u
+		ON u.nickname = th.user_create OR p.user_create = u.nickname
 		WHERE f.slug = $1
-		ORDER BY u.nickname
 	`
-	usersDB, err := r.DB.Query(query, forumUsers.Slug)
+	queryParams = append(queryParams, forumUsers.Slug)
+
+	if forumUsers.Desc {
+		if forumUsers.Since != "" {
+			query += " AND u.nickname < $2"
+			queryParams = append(queryParams, forumUsers.Since)
+		}
+
+		query += " ORDER BY u.nickname DESC"
+	} else {
+		if forumUsers.Since != "" {
+			query += " AND u.nickname > $2"
+			queryParams = append(queryParams, forumUsers.Since)
+		}
+
+		query += " ORDER BY u.nickname"
+	}
+
+	if forumUsers.Limit != "" {
+		query += " LIMIT " + forumUsers.Limit
+	}
+
+	logger.Repo().AddFuncName("GetUsers").Debug(ctx, logger.Fields{"query": query})
+
+	usersDB, err := r.DB.Query(query, queryParams...)
 	if err != nil {
 		logger.Repo().AddFuncName("GetUsers").Error(ctx, err)
 		return nil, err

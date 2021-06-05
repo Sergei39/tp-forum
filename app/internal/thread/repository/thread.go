@@ -107,7 +107,7 @@ func (r *repo) UpdateThreadBySlug(ctx context.Context, thread models.Thread) err
 		WHERE slug = $3
 	`
 
-	_, err := r.DB.Exec(query, thread.Title, thread.Message)
+	_, err := r.DB.Exec(query, thread.Title, thread.Message, thread.Slug)
 	if err != nil {
 		logger.Repo().AddFuncName("UpdateThreadBySlug").Error(ctx, err)
 		return err

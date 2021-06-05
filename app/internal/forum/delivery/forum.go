@@ -58,14 +58,18 @@ func (h *Handler) GetDetails(c echo.Context) error {
 func (h *Handler) GetUsers(c echo.Context) error {
 	ctx := models.GetContext(c)
 
-	slug := c.Param("slug")
 	forumUsers := new(models.ForumUsers)
-	if err := c.Bind(forumUsers); err != nil {
-		sendErr := errors.New(http.StatusBadRequest, err.Error())
-		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
+	forumUsers.Slug = c.Param("slug")
+	forumUsers.Limit = c.QueryParam("limit")
+
+	forumUsers.Since = c.QueryParam("since")
+	desc := c.QueryParam("desc")
+	if desc == "false" || desc == "" {
+		forumUsers.Desc = false
+	} else {
+		forumUsers.Desc = true
 	}
-	forumUsers.Slug = slug
+
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumUsers})
 
 	response, err := h.forumUsecase.GetUsers(ctx, *forumUsers)

@@ -10,7 +10,7 @@ type Forum struct {
 
 type ForumUsers struct {
 	Slug  string `json:"slug"`
-	Limit int    `json:"limit"`
+	Limit string `json:"limit"`
 	Since string `json:"since"`
 	Desc  bool   `json:"desc"`
 }

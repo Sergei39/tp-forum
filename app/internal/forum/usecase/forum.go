@@ -87,7 +87,7 @@ func (u *usecase) GetUsers(ctx context.Context, forumUsers models.ForumUsers) (r
 		return response, nil
 	}
 
-	users, err := u.GetUsers(ctx, forumUsers)
+	users, err := u.forumRepo.GetUsers(ctx, forumUsers)
 	if err != nil {
 		return nil, err
 	}
