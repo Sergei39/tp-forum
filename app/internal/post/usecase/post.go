@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	forumModel "github.com/forums/app/internal/forum"
@@ -33,8 +34,6 @@ func NewPostUsecase(postRepo postModel.PostRepo, userRepo userModel.UserRepo,
 }
 
 func (u *usecase) GetDetails(ctx context.Context, request models.RequestPost) (response.Response, error) {
-	// TODO: доделать содержание ответа в зависимости от параметров запроса
-	// TODO: вернуться к этому запросу и дописать thread
 	// TODO: подумать надо оптимизацией, получениявсех данных одним запросом
 	post, err := u.postRepo.GetPost(ctx, request.Id)
 	if err != nil {
@@ -48,20 +47,35 @@ func (u *usecase) GetDetails(ctx context.Context, request models.RequestPost) (r
 		return response, nil
 	}
 
-	user, err := u.userRepo.GetUserByName(ctx, post.Author)
-	if err != nil {
-		return nil, err
-	}
-
-	forum, err := u.forumRepo.GetForumBySlug(ctx, post.Forum)
-	if err != nil {
-		return nil, err
-	}
-
 	infoPost := models.InfoPost{
-		Post:  *post,
-		User:  *user,
-		Forum: *forum,
+		Post:   post,
+		User:   nil,
+		Forum:  nil,
+		Thread: nil,
+	}
+
+	if strings.Contains(request.Related, "user") {
+		user, err := u.userRepo.GetUserByName(ctx, post.Author)
+		if err != nil {
+			return nil, err
+		}
+		infoPost.User = user
+	}
+
+	if strings.Contains(request.Related, "forum") {
+		forum, err := u.forumRepo.GetForumBySlug(ctx, post.Forum)
+		if err != nil {
+			return nil, err
+		}
+		infoPost.Forum = forum
+	}
+
+	if strings.Contains(request.Related, "thread") {
+		thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, strconv.Itoa(post.Thread))
+		if err != nil {
+			return nil, err
+		}
+		infoPost.Thread = thread
 	}
 
 	response := response.New(http.StatusOK, infoPost)
@@ -101,16 +115,10 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error) {
 	timeNow := time.Now()
 
-	if len(posts) == 0 {
-		response := response.New(http.StatusCreated, posts)
-		return response, nil
-	}
-
 	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
 	if err != nil {
 		return nil, err
 	}
-
 	if thread == nil {
 		message := models.Message{
 			Message: "Can't find thread with id #" + slugOrId + "\n",
@@ -119,28 +127,80 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		return response, nil
 	}
 
+	if len(posts) == 0 {
+		response := response.New(http.StatusCreated, posts)
+		return response, nil
+	}
+
 	logger.Usecase().Debug(ctx, logger.Fields{"forum slug": thread.Forum})
 	for i := range posts {
 		posts[i].Thread = thread.Id
 		posts[i].Forum = thread.Forum
 		posts[i].Created = timeNow
+
+		ok, err := u.checkParent(ctx, thread.Id, int(posts[i].Parent))
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			message := models.Message{
+				Message: "Parent not valid #\n",
+			}
+			response := response.New(http.StatusConflict, message)
+			return response, nil
+		}
+
+		user, err := u.userRepo.GetUserByName(ctx, posts[i].Author)
+		if err != nil {
+			return nil, err
+		}
+
+		if user == nil {
+			message := models.Message{
+				Message: "Can't find post author by nickname: #" + posts[i].Author + "\n",
+			}
+			response := response.New(http.StatusNotFound, message)
+			return response, nil
+		}
+	}
+
+	for i := range posts {
 		nest, err := u.createTreeArray(ctx, int(posts[i].Parent))
 		if err != nil {
 			return nil, err
 		}
 
-		id, err := u.postRepo.CreatePost(ctx, posts[i], nest)
+		post, err := u.postRepo.CreatePost(ctx, posts[i], nest)
 		if err != nil {
 			return nil, err
 		}
 
-		posts[i].Id = int64(id)
+		posts[i] = *post
 	}
-
-	// TODO: сделать проверку на то что parent валидный
 
 	response := response.New(http.StatusCreated, posts)
 	return response, nil
+}
+
+func (u *usecase) checkParent(ctx context.Context, threadId, parentId int) (bool, error) {
+	if parentId == 0 {
+		return true, nil
+	}
+
+	parent, err := u.postRepo.GetPost(ctx, parentId)
+	if err != nil {
+		return false, err
+	}
+
+	if parent == nil {
+		return false, nil
+	}
+
+	if parent.Thread != threadId {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (u *usecase) createTreeArray(ctx context.Context, id int) ([]int64, error) {

@@ -39,9 +39,15 @@ func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 		&post.Author,
 		&post.Message,
 		&post.IsEdited,
+		&post.Forum,
 		&post.Thread,
 		&post.Created,
 	)
+
+	if err == sql.ErrNoRows {
+		logger.Repo().Info(ctx, logger.Fields{"post": "not post"})
+		return nil, nil
+	}
 
 	if err != nil {
 		logger.Repo().AddFuncName("GetPost").Error(ctx, err)
@@ -55,7 +61,7 @@ func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequest) error {
 	query :=
 		`
-		UPDATE post SET message = $1, is_edited = true
+		UPDATE posts SET message = $1, is_edited = true
 		WHERE id = $2
 	`
 
@@ -68,16 +74,15 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 	return nil
 }
 
-func (r *repo) CreatePost(ctx context.Context, post models.Post, nest []int64) (int, error) {
+func (r *repo) CreatePost(ctx context.Context, post models.Post, nest []int64) (*models.Post, error) {
 
 	query :=
 		`
 		INSERT INTO posts (parent, user_create, message, forum, thread, created, tree) VALUES
-		($1, $2, $3, $4, $5, $6, $7) returning id
+		($1, $2, $3, $4, $5, $6, $7) returning id, created
 	`
 
 	logger.Repo().AddFuncName("CreatePost").Debug(ctx, logger.Fields{"nesting": nest})
-	id := new(int)
 	logger.Repo().Debug(ctx, logger.Fields{"forum slug": post.Forum})
 	err := r.DB.QueryRow(query,
 		post.Parent,
@@ -86,14 +91,14 @@ func (r *repo) CreatePost(ctx context.Context, post models.Post, nest []int64) (
 		post.Forum,
 		post.Thread,
 		post.Created,
-		pq.Array(nest)).Scan(&id)
+		pq.Array(nest)).Scan(&post.Id, &post.Created)
 
 	if err != nil {
 		logger.Repo().AddFuncName("CreatePost").Error(ctx, err)
-		return 0, err
+		return nil, err
 	}
 
-	return *id, nil
+	return &post, nil
 }
 
 func (r *repo) GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nesting, error) {

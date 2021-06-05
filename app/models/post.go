@@ -19,10 +19,10 @@ type RequestPost struct {
 }
 
 type InfoPost struct {
-	Post   Post   `json:"post"`
-	User   User   `json:"user"`
-	Forum  Forum  `json:"forum"`
-	Thread Thread `json:"thread"`
+	Post   *Post   `json:"post"`
+	User   *User   `json:"author"`
+	Forum  *Forum  `json:"forum"`
+	Thread *Thread `json:"thread"`
 }
 
 type MessagePostRequest struct {

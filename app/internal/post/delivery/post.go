@@ -48,11 +48,8 @@ func (h *Handler) GetDetails(c echo.Context) error {
 	ctx := models.GetContext(c)
 
 	related := new(models.RequestPost)
-	if err := c.Bind(related); err != nil {
-		sendErr := errors.New(http.StatusBadRequest, err.Error())
-		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
-	}
+	related.Related = c.QueryParam("related")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)

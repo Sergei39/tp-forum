@@ -23,6 +23,6 @@ type PostUsecase interface {
 type PostRepo interface {
 	GetPost(ctx context.Context, id int) (*models.Post, error)
 	UpdateMessage(ctx context.Context, request models.MessagePostRequest) error
-	CreatePost(ctx context.Context, post models.Post, nest []int64) (int, error)
+	CreatePost(ctx context.Context, post models.Post, nest []int64) (*models.Post, error)
 	GetPostAndChildLastArr(ctx context.Context, id int) (*models.Nesting, error)
 }
