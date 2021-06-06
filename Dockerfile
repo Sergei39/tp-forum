@@ -33,4 +33,4 @@ EXPOSE 5000
 
 ENV PGPASSWORD 1111
 
-CMD service postgresql start && psql -h localhost -d forums -U sergei -p 5432 -a -q -f ./tables.sql && ./main
+CMD service postgresql start && psql -h localhost -d forums -U sergei -p 5432 -a -q -f ./tabels.sql && ./main
