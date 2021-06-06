@@ -136,4 +136,6 @@ CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (id);
 
-CREATE INDEX IF NOT EXISTS post_thread_id on posts (id);
+CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
+CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
+CREATE INDEX IF NOT EXISTS post_first_tree on posts ((tree[1]));

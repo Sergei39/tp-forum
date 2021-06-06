@@ -139,7 +139,7 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	query :=
 		`
 		SELECT DISTINCT th.id, th.title, th.user_create, th.forum, 
-		th.message, th.slug, th.created
+		th.message, th.slug, th.created, th.votes
 		FROM threads as th
 		WHERE th.forum = $1
 	`
@@ -184,6 +184,7 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 			&thread.Message,
 			&thread.Slug,
 			&thread.Created,
+			&thread.Votes,
 		)
 
 		if err != nil {
@@ -193,6 +194,8 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 
 		threads = append(threads, *thread)
 	}
+
+	logger.Repo().AddFuncName("GetThreads").Info(ctx, logger.Fields{"threads": threads})
 
 	return threads, nil
 }

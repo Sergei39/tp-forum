@@ -159,7 +159,7 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		if pqErr, ok := err.(pgx.PgError); ok {
 			logger.Usecase().AddFuncName("CreatePosts").Info(ctx, logger.Fields{"Error Code": pqErr.Code})
 			switch pqErr.Code {
-			case pgerrcode.TransactionRollback: // проблемы с сохранением user
+			case pgerrcode.ForeignKeyViolation: // проблемы с сохранением user
 				message := models.Message{
 					Message: "Can't find user\n",
 				}

@@ -167,10 +167,7 @@ func (u *usecase) AddVote(ctx context.Context, vote models.Vote, slugOrId string
 			}
 		}
 	} else {
-		if thread.Votes == nil {
-			thread.Votes = new(int)
-		}
-		*thread.Votes += vote.Voice
+		thread.Votes += vote.Voice
 	}
 
 	response := response.New(http.StatusOK, thread)

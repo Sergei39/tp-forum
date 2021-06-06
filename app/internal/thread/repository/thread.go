@@ -116,26 +116,15 @@ func (r *repo) UpdateThreadBySlug(ctx context.Context, thread models.Thread) err
 }
 
 func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
-	tx, err := r.DB.Begin()
-	if err != nil {
-		logger.Repo().AddFuncName("UpdateVote_Start").Error(ctx, err)
-	}
 	query :=
 		`
 		UPDATE votes SET voice = $1
 		WHERE user_create = $2 AND thread = $3
 	`
 
-	_, err = tx.Exec(query, vote.Voice, vote.User, vote.Thread)
+	_, err := r.DB.Exec(query, vote.Voice, vote.User, vote.Thread)
 	if err != nil {
 		logger.Repo().AddFuncName("UpdateVote").Error(ctx, err)
-		_ = tx.Rollback()
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
-		logger.Repo().AddFuncName("UpdateVote_Commit").Error(ctx, err)
-		_ = tx.Rollback()
 		return err
 	}
 
@@ -145,26 +134,14 @@ func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
 func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
 	id := new(int)
 
-	tx, err := r.DB.Begin()
-	if err != nil {
-		logger.Repo().AddFuncName("AddVote_Start").Error(ctx, err)
-	}
-
 	query :=
 		`
 		INSERT INTO votes (user_create, thread, voice) 
 		VALUES ($1, $2, $3) returning id
 	`
-	err = tx.QueryRow(query, vote.User, vote.Thread, vote.Voice).Scan(&id)
-	if err != nil {
-		logger.Repo().AddFuncName("AddVote").Error(ctx, err)
-		_ = tx.Rollback()
-		return err
-	}
+	err := r.DB.QueryRow(query, vote.User, vote.Thread, vote.Voice).Scan(&id)
 
-	if err = tx.Commit(); err != nil {
-		logger.Repo().AddFuncName("AddVote_Commit").Error(ctx, err)
-		_ = tx.Rollback()
+	if err != nil {
 		return err
 	}
 
