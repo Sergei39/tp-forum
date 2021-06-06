@@ -20,6 +20,33 @@ func NewPostRepo(db *pgx.ConnPool) postModel.PostRepo {
 	}
 }
 
+func (r *repo) GetPostsThread(ctx context.Context, id int) (int, error) {
+	query :=
+		`
+		SELECT thread
+		FROM posts
+		WHERE id = $1
+	`
+
+	var thread int
+	err := r.DB.QueryRow(query, id).Scan(
+		&thread,
+	)
+
+	if err == pgx.ErrNoRows {
+		logger.Repo().Info(ctx, logger.Fields{"post": "not post"})
+		return 0, nil
+	}
+
+	if err != nil {
+		logger.Repo().AddFuncName("GetPostsThread").Error(ctx, err)
+		return 0, err
+	}
+
+	logger.Repo().Debug(ctx, logger.Fields{"post thread": thread})
+	return thread, nil
+}
+
 func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 
 	query :=

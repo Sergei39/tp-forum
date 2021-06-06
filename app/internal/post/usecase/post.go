@@ -188,16 +188,16 @@ func (u *usecase) checkParent(ctx context.Context, threadId, parentId int) (bool
 		return true, nil
 	}
 
-	parent, err := u.postRepo.GetPost(ctx, parentId)
+	threadIdBD, err := u.postRepo.GetPostsThread(ctx, parentId)
 	if err != nil {
 		return false, err
 	}
 
-	if parent == nil {
+	if threadIdBD == 0 {
 		return false, nil
 	}
 
-	if parent.Thread != threadId {
+	if threadIdBD != threadId {
 		return false, nil
 	}
 

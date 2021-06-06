@@ -25,4 +25,5 @@ type PostRepo interface {
 	UpdateMessage(ctx context.Context, request models.MessagePostRequest) error
 	CreatePosts(ctx context.Context, posts []models.Post) ([]models.Post, error)
 	CreateForumsUsers(ctx context.Context, posts []models.Post) error
+	GetPostsThread(ctx context.Context, id int) (int, error)
 }
