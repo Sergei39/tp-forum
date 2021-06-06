@@ -37,20 +37,6 @@ func (r *repo) CreateForum(ctx context.Context, forum models.Forum) (id int, err
 		return 0, err
 	}
 
-	query =
-		`
-		INSERT INTO forums_users (user_create, forum) 
-		VALUES ($1, $2)
-	`
-	_, err = r.DB.Exec(query,
-		forum.User,
-		forum.Slug)
-
-	if err != nil {
-		logger.Repo().AddFuncName("CreateForum").Error(ctx, err)
-		return 0, err
-	}
-
 	logger.Repo().Debug(ctx, logger.Fields{"forum id": id})
 	return id, nil
 }
@@ -59,14 +45,9 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 	forum := new(models.Forum)
 	query :=
 		`
-		SELECT f.title, f.user_create, f.slug, COUNT(DISTINCT th.id), count(DISTINCT p.id)
+		SELECT f.title, f.user_create, f.slug, f.threads, f.posts
 		FROM forums as f
-		LEFT JOIN threads as th
-		ON f.slug = th.forum
-		LEFT JOIN posts as p
-		ON f.slug = p.forum
 		WHERE f.slug = $1
-		GROUP BY f.title, f.user_create, f.slug
 	`
 	err := r.DB.QueryRow(query, slug).Scan(
 		&forum.Title,
@@ -94,14 +75,10 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 	query :=
 		`
 		SELECT DISTINCT u.nickname, u.fullname, u.about, u.email
-		FROM forums as f
-		JOIN threads th
-		ON th.forum = f.slug
-		LEFT JOIN posts p
-		ON p.thread = th.id
-		JOIN users u
-		ON u.nickname = th.user_create OR p.user_create = u.nickname
-		WHERE f.slug = $1
+		FROM forums_users as fu
+		JOIN users as u
+		ON u.nickname = fu.user_create
+		WHERE fu.forum = $1
 	`
 	queryParams = append(queryParams, forumUsers.Slug)
 
@@ -188,17 +165,6 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	}
 
 	logger.Repo().Debug(ctx, logger.Fields{"query": query})
-	// query :=
-	// 	`
-	// 	SELECT DISTINCT th.id, th.title, th.user_create, th.forum,
-	// 	th.message, count(v), th.slug, th.created
-	// 	FROM threads as th
-	// 	JOIN votes as v
-	// 	ON v.thread = th.id
-	// 	WHERE th.forum = A9-h-JV4RK5jr
-	// 	GROUP BY th.id
-	// 	ORDER BY th.created;
-	// `
 
 	threadsDB, err := r.DB.Query(query, queryParams...)
 	if err != nil {

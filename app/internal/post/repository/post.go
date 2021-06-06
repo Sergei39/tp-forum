@@ -130,3 +130,45 @@ func (r *repo) CreatePosts(ctx context.Context, posts []models.Post) ([]models.P
 
 	return posts, nil
 }
+
+func (r *repo) CreateForumsUsers(ctx context.Context, posts []models.Post) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		logger.Repo().AddFuncName("CreatePosts_Start").Error(ctx, err)
+		return err
+	}
+
+	var queryParams []interface{}
+	query := "INSERT INTO forums_users (forum, user_create) VALUES "
+
+	for i, post := range posts {
+		query += fmt.Sprintf("($%d, $%d)",
+			i*2+1, i*2+2)
+
+		if i != len(posts)-1 {
+			query += ","
+		}
+
+		queryParams = append(queryParams, post.Forum, post.Author)
+	}
+
+	query += " ON CONFLICT DO NOTHING"
+
+	logger.Repo().AddFuncName("CreateForumsUsers").Debug(ctx, logger.Fields{"query": query})
+
+	_, err = tx.Exec(query, queryParams...)
+	if err != nil {
+		logger.Repo().AddFuncName("CreateForumsUsers").Error(ctx, err)
+		_ = tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.Repo().AddFuncName("CreateForumsUsers_Commit").Error(ctx, err)
+		_ = tx.Rollback()
+		// TODO: надо тут что то сделать, чтобы не было хардкода
+		return pgx.PgError{Code: "40000"}
+	}
+
+	return nil
+}

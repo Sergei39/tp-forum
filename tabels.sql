@@ -11,38 +11,35 @@ DROP TABLE forums CASCADE;
 DROP SEQUENCE post_tree_id;
 CREATE SEQUENCE post_tree_id;
 
-CREATE TABLE users (
+CREATE UNLOGGED TABLE users (
     id SERIAL PRIMARY KEY,
     nickname CITEXT UNIQUE NOT NULL COLLATE "POSIX",
     fullname TEXT,
     about TEXT,
     email CITEXT UNIQUE
-    -- password BYTEA --???
 );
 
-CREATE TABLE forums (
+CREATE UNLOGGED TABLE forums (
     id SERIAL PRIMARY KEY,
-    -- user_create TEXT,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     title TEXT,
-    slug CITEXT UNIQUE NOT NULL -- человекочетаемый URL
-    -- возможная оптимизация в будущем
-    -- создать поля с кол-вом сообщений и кол-вом обсуждений
+    slug CITEXT UNIQUE NOT NULL, -- человекочетаемый URL
+    threads INTEGER DEFAULT 0 NOT NULL,
+    posts INTEGER DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE threads (
+CREATE UNLOGGED TABLE threads (
     id SERIAL PRIMARY KEY,
     title TEXT,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE ,
     message TEXT, -- описание ветки
-    -- возможная оптимизация в будущем
-    -- создать поля с кол-вом голосов
+    votes INTEGER DEFAULT 0 NOT NULL,
     slug CITEXT NOT NULL,
     created TIMESTAMP with time zone
 );
 
-CREATE TABLE posts (
+CREATE UNLOGGED TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
     -- сделать привязку к posts
@@ -56,7 +53,7 @@ CREATE TABLE posts (
     tree BIGINT[]
 );
 
-CREATE TABLE votes (
+CREATE UNLOGGED TABLE votes (
     id SERIAL PRIMARY KEY,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
@@ -64,7 +61,79 @@ CREATE TABLE votes (
     UNIQUE (user_create, thread)
 );
 
-CREATE TABLE forums_users (
+CREATE UNLOGGED TABLE forums_users (
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
-    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL
+    forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
+    UNIQUE (user_create, forum)
 );
+
+-- функция и триггер при создании поста, на увеличение кол-ва постов в forums
+CREATE OR REPLACE FUNCTION insert_post() RETURNS TRIGGER AS
+$insert_post$
+BEGIN
+    UPDATE forums SET posts=posts + 1 WHERE forums.slug = NEW.forum;
+    INSERT INTO forums_users (user_create, forum) VALUES (NEW.user_create, NEW.forum)
+    ON CONFLICT DO NOTHING;
+    RETURN NEW;
+END
+$insert_post$ LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_post
+AFTER INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE insert_post();
+
+
+-- функция и триггер при создании ветки, на увеличение кол-ва веток в forums
+CREATE OR REPLACE FUNCTION insert_thread() RETURNS TRIGGER AS
+$insert_thread$
+BEGIN
+    UPDATE forums SET threads=threads + 1 WHERE forums.slug = NEW.forum;
+    INSERT INTO forums_users (user_create, forum) VALUES (NEW.user_create, NEW.forum)
+    ON CONFLICT DO NOTHING;
+    RETURN NEW;
+END
+$insert_thread$ LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_thread
+AFTER INSERT ON threads
+    FOR EACH ROW EXECUTE PROCEDURE insert_thread();
+
+
+-- функция и триггер при создании голоса, на увеличение кол-ва голосов в threads
+CREATE OR REPLACE FUNCTION insert_voice() RETURNS TRIGGER AS
+$insert_voice$
+BEGIN
+    UPDATE threads SET votes=(votes + NEW.voice) WHERE id = NEW.thread;
+    RETURN NULL;
+END
+$insert_voice$ LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_vote
+AFTER INSERT ON votes
+    FOR EACH ROW EXECUTE PROCEDURE insert_voice();
+
+
+-- функция и триггер при обновлении голоса, на изменение кол-ва голосов в threads
+CREATE OR REPLACE FUNCTION update_voice() RETURNS TRIGGER AS
+$update_voice$
+BEGIN
+    UPDATE threads SET votes= votes - OLD.voice + NEW.voice  WHERE id = NEW.thread;
+
+    RETURN NULL;
+END
+$update_voice$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_voice
+AFTER UPDATE ON votes
+    FOR EACH ROW EXECUTE PROCEDURE update_voice();
+
+
+-- index
+CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
+
+CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
+
+CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
+CREATE INDEX IF NOT EXISTS thr_slug ON threads (id);
+
+CREATE INDEX IF NOT EXISTS post_thread_id on posts (id);

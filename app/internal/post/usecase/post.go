@@ -175,6 +175,10 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		}
 	}
 
+	// if err = u.postRepo.CreateForumsUsers(ctx, posts); err != nil {
+	// 	return nil, err
+	// }
+
 	response := response.New(http.StatusCreated, postsDB)
 	return response, nil
 }
