@@ -74,8 +74,6 @@ func (r *repo) GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*model
 		query += " WHERE th.slug = $1"
 	}
 
-	query += " GROUP BY th.id"
-
 	err := r.DB.QueryRow(query, slugOrId).Scan(
 		&thread.Id,
 		&thread.Title,
