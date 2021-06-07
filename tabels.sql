@@ -156,13 +156,16 @@ AFTER UPDATE ON votes
 
 -- index
 CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
+CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_create); -- подумать надо ли
+CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- для получения всех юзеров из форума
 
 CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
 
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
-CREATE INDEX IF NOT EXISTS thr_forum ON threads (forum); -- тестовый
+CREATE INDEX IF NOT EXISTS thr_forum ON threads (forum); -- для получения всех веток из форума
 
 -- CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
 CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- надо
 CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
--- CREATE INDEX IF NOT EXISTS post_first_tree on posts ((tree[1]));
+
+-- CREATE INDEX IF NOT EXISTS post_tree_first on posts ((tree[1]));

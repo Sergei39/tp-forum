@@ -74,7 +74,7 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 	var queryParams []interface{}
 	query :=
 		`
-		SELECT DISTINCT u.nickname, u.fullname, u.about, u.email
+		SELECT u.nickname, u.fullname, u.about, u.email
 		FROM forums_users as fu
 		JOIN users as u
 		ON u.nickname = fu.user_create
@@ -138,7 +138,7 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 	var queryParams []interface{}
 	query :=
 		`
-		SELECT DISTINCT th.id, th.title, th.user_create, th.forum, 
+		SELECT th.id, th.title, th.user_create, th.forum, 
 		th.message, th.slug, th.created, th.votes
 		FROM threads as th
 		WHERE th.forum = $1
