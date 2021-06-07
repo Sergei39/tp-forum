@@ -160,7 +160,7 @@ CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
 CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
 
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
-CREATE INDEX IF NOT EXISTS thr_slug ON threads (id);
+CREATE INDEX IF NOT EXISTS thr_id ON threads (id);
 
 -- CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
 CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- надо
