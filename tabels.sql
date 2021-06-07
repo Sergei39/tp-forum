@@ -161,11 +161,14 @@ CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- для 
 
 CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
 
-CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
+CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug)
+WHERE slug != '';
 CREATE INDEX IF NOT EXISTS thr_forum ON threads (forum); -- для получения всех веток из форума
 
 -- CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
-CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- надо
+CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- пумать нужно ли если есть post_thread_id
+CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
+CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
 CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
 
 -- CREATE INDEX IF NOT EXISTS post_tree_first on posts ((tree[1]));
