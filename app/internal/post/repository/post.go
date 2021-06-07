@@ -101,11 +101,11 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 
 func (r *repo) CreatePosts(ctx context.Context, posts []models.Post) ([]models.Post, error) {
 	var queryParams []interface{}
-	query := "INSERT INTO posts (parent, user_create, message, forum, thread, created, tree) VALUES "
+	query := "INSERT INTO posts (parent, user_create, message, forum, thread, created) VALUES "
 
 	for i, post := range posts {
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, (SELECT tree FROM posts WHERE id = $%d) || ARRAY[nextval('post_tree_id')])",
-			i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6, i*6+1)
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)",
+			i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6)
 
 		if i != len(posts)-1 {
 			query += ","

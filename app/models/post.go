@@ -4,7 +4,7 @@ import "time"
 
 type Post struct {
 	Id       int64     `json:"id"`
-	Parent   int64     `json:"parent"`
+	Parent   *int64    `json:"parent"`
 	Author   string    `json:"author"`
 	Message  string    `json:"message"`
 	IsEdited bool      `json:"isEdited"`

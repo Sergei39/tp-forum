@@ -139,18 +139,6 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 		posts[i].Thread = thread.Id
 		posts[i].Forum = thread.Forum
 		posts[i].Created = timeNow
-
-		ok, err := u.checkParent(ctx, thread.Id, int(posts[i].Parent))
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			message := models.Message{
-				Message: "Parent not valid #\n",
-			}
-			response := response.New(http.StatusConflict, message)
-			return response, nil
-		}
 	}
 
 	postsDB, err := u.postRepo.CreatePosts(ctx, posts)
@@ -165,6 +153,15 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 				}
 				response := response.New(http.StatusNotFound, message)
 				return response, nil
+
+			case "12345":
+				{
+					message := models.Message{
+						Message: "Parent not found\n",
+					}
+					response := response.New(http.StatusConflict, message)
+					return response, nil
+				}
 
 			default:
 				logger.Usecase().AddFuncName("CreatePosts").Error(ctx, err)
@@ -181,25 +178,4 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 
 	response := response.New(http.StatusCreated, postsDB)
 	return response, nil
-}
-
-func (u *usecase) checkParent(ctx context.Context, threadId, parentId int) (bool, error) {
-	if parentId == 0 {
-		return true, nil
-	}
-
-	threadIdBD, err := u.postRepo.GetPostsThread(ctx, parentId)
-	if err != nil {
-		return false, err
-	}
-
-	if threadIdBD == 0 {
-		return false, nil
-	}
-
-	if threadIdBD != threadId {
-		return false, nil
-	}
-
-	return true, nil
 }

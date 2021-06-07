@@ -43,14 +43,14 @@ CREATE UNLOGGED TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
     -- сделать привязку к posts
-    parent INTEGER DEFAULT 0 NOT NULL,
+    parent INTEGER REFERENCES posts(id) DEFAULT NULL,
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
     thread INTEGER REFERENCES threads(id) ON DELETE CASCADE NOT NULL,
     created TIMESTAMP with time zone,
     message TEXT,
     is_edited BOOLEAN DEFAULT FALSE,
-    tree BIGINT[]
+    tree INTEGER[]
 );
 
 CREATE UNLOGGED TABLE votes (
@@ -66,6 +66,32 @@ CREATE UNLOGGED TABLE forums_users (
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
     UNIQUE (user_create, forum)
 );
+
+
+CREATE OR REPLACE FUNCTION add_tree() RETURNS TRIGGER AS
+$add_tree$
+declare
+    parents INTEGER[];
+begin
+    if (new.parent is null) then
+        new.tree := new.tree || new.id;
+    else
+        select tree from posts where id = new.parent and thread = new.thread
+        into parents;
+
+        if (coalesce(array_length(parents, 1), 0) = 0) then
+            raise exception 'parent post not exists' USING ERRCODE = '12345';
+        end if;
+
+        new.tree := new.tree || parents || new.id;
+    end if;
+    return new;
+end;
+$add_tree$ LANGUAGE plpgsql;
+
+create trigger add_path
+    before insert on posts for each row
+execute procedure add_tree();
 
 -- функция и триггер при создании поста, на увеличение кол-ва постов в forums
 CREATE OR REPLACE FUNCTION insert_post() RETURNS TRIGGER AS
@@ -136,7 +162,7 @@ CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (slug);
 CREATE INDEX IF NOT EXISTS thr_slug ON threads (id);
 
--- CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
+CREATE INDEX IF NOT EXISTS post_thread_id on posts (id, thread);
 CREATE INDEX IF NOT EXISTS post_id on posts (id);
--- CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
-CREATE INDEX IF NOT EXISTS post_first_tree on posts ((tree[1]));
+CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
+-- CREATE INDEX IF NOT EXISTS post_first_tree on posts ((tree[1]));
