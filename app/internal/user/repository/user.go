@@ -116,26 +116,26 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, 
 	return user, nil
 }
 
-func (r *repo) CreateUser(ctx context.Context, user models.User) (id int, err error) {
+func (r *repo) CreateUser(ctx context.Context, user models.User) (err error) {
 
 	query :=
 		`
 		INSERT INTO users (nickname, fullname, about, email) 
-		VALUES ($1, $2, $3, $4) returning id
+		VALUES ($1, $2, $3, $4)
 	`
-	err = r.DB.QueryRow(query,
+	_, err = r.DB.Exec(query,
 		user.Nickname,
 		user.Fullname,
 		user.About,
-		user.Email).Scan(&id)
+		user.Email)
 
 	if err != nil {
 		logger.Repo().AddFuncName("CreateUser").Error(ctx, err)
-		return 0, err
+		return err
 	}
 
-	logger.Repo().Debug(ctx, logger.Fields{"user id": id})
-	return id, nil
+	logger.Repo().Debug(ctx, logger.Fields{"user nickname": user.Nickname})
+	return nil
 }
 
 func (r *repo) UpdateUser(ctx context.Context, user models.User) (id int, err error) {

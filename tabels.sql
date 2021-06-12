@@ -12,7 +12,6 @@ DROP SEQUENCE post_tree_id;
 CREATE SEQUENCE post_tree_id;
 
 CREATE UNLOGGED TABLE users (
-    id SERIAL PRIMARY KEY,
     nickname CITEXT UNIQUE NOT NULL COLLATE "POSIX",
     fullname TEXT,
     about TEXT,
@@ -42,6 +41,7 @@ CREATE UNLOGGED TABLE threads (
 CREATE UNLOGGED TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
+--     root_id INTEGER NOT NULL,
     -- сделать привязку к posts
     parent INTEGER REFERENCES posts(id) DEFAULT NULL,
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
@@ -75,6 +75,7 @@ declare
 begin
     if (new.parent is null) then
         new.tree := new.tree || new.id;
+--         new.root_id := new.tree[1];
     else
         select tree from posts where id = new.parent and thread = new.thread
         into parents;
@@ -84,6 +85,7 @@ begin
         end if;
 
         new.tree := new.tree || parents || new.id;
+--         new.root_id := new.tree[1];
     end if;
     return new;
 end;

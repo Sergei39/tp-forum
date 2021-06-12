@@ -29,7 +29,7 @@ func (u *usecase) CreateUser(ctx context.Context, user models.User) (response.Re
 		return response, nil
 	}
 
-	_, err = u.userRepo.CreateUser(ctx, user)
+	err = u.userRepo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
