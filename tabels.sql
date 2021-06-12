@@ -41,8 +41,7 @@ CREATE UNLOGGED TABLE threads (
 CREATE UNLOGGED TABLE posts (
     id SERIAL PRIMARY KEY,
     title TEXT,
---     root_id INTEGER NOT NULL,
-    -- сделать привязку к posts
+    root_id INTEGER NOT NULL,
     parent INTEGER REFERENCES posts(id) DEFAULT NULL,
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
     user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
@@ -75,7 +74,7 @@ declare
 begin
     if (new.parent is null) then
         new.tree := new.tree || new.id;
---         new.root_id := new.tree[1];
+        new.root_id := new.tree[1];
     else
         select tree from posts where id = new.parent and thread = new.thread
         into parents;
@@ -85,7 +84,7 @@ begin
         end if;
 
         new.tree := new.tree || parents || new.id;
---         new.root_id := new.tree[1];
+        new.root_id := new.tree[1];
     end if;
     return new;
 end;
@@ -171,4 +170,5 @@ CREATE INDEX IF NOT EXISTS thr_forum ON threads (forum); -- для получе�
 -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
 CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
 CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
-CREATE INDEX IF NOT EXISTS post_thread_tree1 on posts (thread, (tree[1])); -- для изменения плана слияния в сортировках tree, tree_parent
+CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- для изменения плана слияния в сортировках tree, tree_parent
+CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- не факт что нужно

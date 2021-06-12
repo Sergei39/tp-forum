@@ -165,7 +165,7 @@ func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (st
 			queryParams = append(queryParams, threadPosts.Since)
 		}
 
-		query += " ORDER BY p.tree[0] DESC, p.tree DESC"
+		query += " ORDER BY p.root_id DESC, p.tree DESC"
 	} else {
 		if threadPosts.Since != "" {
 			query += " AND p.tree > (SELECT p2.tree from posts AS p2 WHERE p2.id = $2)"
@@ -185,8 +185,8 @@ const selectParentTreeLimitAsc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.tree[1] IN (
-		SELECT p2.tree[1]
+	WHERE p.thread = $1 and p.root_id IN (
+		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL
 		ORDER BY p2.tree
@@ -199,24 +199,24 @@ const selectParentTreeLimitDesc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.tree[1] IN (
-		SELECT p2.tree[1]
+	WHERE p.thread = $1 and p.root_id IN (
+		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL
 		ORDER BY p2.tree DESC
 		LIMIT $3
 	)
-	ORDER BY p.tree[1] DESC, p.tree ASC
+	ORDER BY p.root_id DESC, p.tree ASC
 `
 
 const selectParentTreeSinceLimitAsc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.tree[1] IN (
-		SELECT p2.tree[1]
+	WHERE p.thread = $1 and p.root_id IN (
+		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.tree[1] > (SELECT p3.tree[1] from posts p3 where p3.id = $3)
+		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $3)
 		ORDER BY p2.tree
 		LIMIT $4
 	)
@@ -227,14 +227,14 @@ const selectParentTreeSinceLimitDesc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.tree[1] IN (
-		SELECT p2.tree[1]
+	WHERE p.thread = $1 and p.root_id IN (
+		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.tree[1] < (SELECT p3.tree[1] from posts p3 where p3.id = $3)
+		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $3)
 		ORDER BY p2.tree DESC
 		LIMIT $4
 	)
-	ORDER BY p.tree[1] DESC, p.tree ASC
+	ORDER BY p.root_id DESC, p.tree ASC
 `
 
 func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
