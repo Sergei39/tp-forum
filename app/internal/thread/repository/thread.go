@@ -185,11 +185,12 @@ const selectParentTreeLimitAsc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.root_id IN (
+	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL
-		LIMIT $3
+		WHERE p2.thread = $1 AND p2.parent is NULL
+		ORDER BY p2.id
+		LIMIT $2
 	)
 	ORDER BY p.tree
 `
@@ -198,12 +199,12 @@ const selectParentTreeLimitDesc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.root_id IN (
+	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL
+		WHERE p2.thread = $1 AND p2.parent is NULL
 		ORDER BY p2.id DESC
-		LIMIT $3
+		LIMIT $2
 	)
 	ORDER BY p.root_id DESC, p.tree ASC
 `
@@ -212,11 +213,11 @@ const selectParentTreeSinceLimitAsc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.root_id IN (
+	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $3)
-		LIMIT $4
+		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $2)
+		LIMIT $3
 	)
 	ORDER BY p.tree
 `
@@ -225,12 +226,12 @@ const selectParentTreeSinceLimitDesc = `
 	SELECT p.id, p.parent, p.user_create, p.message,
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
-	WHERE p.thread = $1 and p.root_id IN (
+	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $3)
+		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $2)
 		ORDER BY p2.id DESC
-		LIMIT $4
+		LIMIT $3
 	)
 	ORDER BY p.root_id DESC, p.tree ASC
 `
@@ -291,7 +292,6 @@ func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPost
 			}
 		}
 	default:
-		queryParams = append(queryParams, threadPosts.ThreadId)
 		if threadPosts.Desc {
 			if threadPosts.Since != "" {
 				query = selectParentTreeSinceLimitDesc
