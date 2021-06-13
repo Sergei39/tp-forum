@@ -189,7 +189,6 @@ const selectParentTreeLimitAsc = `
 		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL
-		ORDER BY p2.tree
 		LIMIT $3
 	)
 	ORDER BY p.tree
@@ -203,7 +202,7 @@ const selectParentTreeLimitDesc = `
 		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL
-		ORDER BY p2.tree DESC
+		ORDER BY p2.id DESC
 		LIMIT $3
 	)
 	ORDER BY p.root_id DESC, p.tree ASC
@@ -217,7 +216,6 @@ const selectParentTreeSinceLimitAsc = `
 		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $3)
-		ORDER BY p2.tree
 		LIMIT $4
 	)
 	ORDER BY p.tree
@@ -231,9 +229,41 @@ const selectParentTreeSinceLimitDesc = `
 		SELECT p2.root_id
 		FROM posts p2
 		WHERE p2.thread = $2 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $3)
-		ORDER BY p2.tree DESC
+		ORDER BY p2.id DESC
 		LIMIT $4
 	)
+	ORDER BY p.root_id DESC, p.tree ASC
+`
+
+const selectParentTreeAsc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1
+	ORDER BY p.tree
+`
+
+const selectParentTreeDesc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1
+	ORDER BY p.root_id DESC, p.tree ASC
+`
+
+const selectParentTreeSinceAsc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.root_id > (SELECT p3.root_id from posts p3 where p3.id = $2)
+	ORDER BY p.tree
+`
+
+const selectParentTreeSinceDesc = `
+	SELECT p.id, p.parent, p.user_create, p.message,
+	p.is_edited, p.forum, p.thread, p.created
+	FROM posts as p
+	WHERE p.thread = $1 and p.root_id < (SELECT p3.root_id from posts p3 where p3.id = $2)
 	ORDER BY p.root_id DESC, p.tree ASC
 `
 
@@ -241,28 +271,43 @@ func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPost
 	var queryParams []interface{}
 	var query string
 
-	queryParams = append(queryParams, threadPosts.ThreadId, threadPosts.ThreadId)
+	queryParams = append(queryParams, threadPosts.ThreadId)
 
-	if threadPosts.Desc {
-		if threadPosts.Since != "" {
-			query = selectParentTreeSinceLimitDesc
-			queryParams = append(queryParams, threadPosts.Since)
+	switch threadPosts.Limit {
+	case "":
+		if threadPosts.Desc {
+			if threadPosts.Since != "" {
+				query = selectParentTreeSinceDesc
+				queryParams = append(queryParams, threadPosts.Since)
+			} else {
+				query = selectParentTreeDesc
+			}
 		} else {
-			query = selectParentTreeLimitDesc
+			if threadPosts.Since != "" {
+				query = selectParentTreeSinceAsc
+				queryParams = append(queryParams, threadPosts.Since)
+			} else {
+				query = selectParentTreeAsc
+			}
 		}
-	} else {
-		if threadPosts.Since != "" {
-			query = selectParentTreeSinceLimitAsc
-			queryParams = append(queryParams, threadPosts.Since)
+	default:
+		queryParams = append(queryParams, threadPosts.ThreadId)
+		if threadPosts.Desc {
+			if threadPosts.Since != "" {
+				query = selectParentTreeSinceLimitDesc
+				queryParams = append(queryParams, threadPosts.Since)
+			} else {
+				query = selectParentTreeLimitDesc
+			}
 		} else {
-			query = selectParentTreeLimitAsc
+			if threadPosts.Since != "" {
+				query = selectParentTreeSinceLimitAsc
+				queryParams = append(queryParams, threadPosts.Since)
+			} else {
+				query = selectParentTreeLimitAsc
+			}
 		}
-	}
-
-	if threadPosts.Limit != "" {
 		queryParams = append(queryParams, threadPosts.Limit)
-	} else {
-		queryParams = append(queryParams, "ALL")
 	}
 
 	return query, queryParams
