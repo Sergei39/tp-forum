@@ -165,7 +165,7 @@ func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (st
 			queryParams = append(queryParams, threadPosts.Since)
 		}
 
-		query += " ORDER BY p.root_id DESC, p.tree DESC"
+		query += " ORDER BY p.tree DESC"
 	} else {
 		if threadPosts.Since != "" {
 			query += " AND p.tree > (SELECT p2.tree from posts AS p2 WHERE p2.id = $2)"
