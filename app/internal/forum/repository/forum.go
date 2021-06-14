@@ -74,28 +74,26 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 	var queryParams []interface{}
 	query :=
 		`
-		SELECT u.nickname, u.fullname, u.about, u.email
-		FROM forums_users as fu
-		JOIN users as u
-		ON u.nickname = fu.user_create
-		WHERE fu.forum = $1
+		SELECT user_nickname, user_fullname, user_about, user_email
+		FROM forums_users
+		WHERE forum = $1
 	`
 	queryParams = append(queryParams, forumUsers.Slug)
 
 	if forumUsers.Desc {
 		if forumUsers.Since != "" {
-			query += " AND u.nickname < $2"
+			query += " AND user_nickname < $2"
 			queryParams = append(queryParams, forumUsers.Since)
 		}
 
-		query += " ORDER BY u.nickname DESC"
+		query += " ORDER BY user_nickname DESC"
 	} else {
 		if forumUsers.Since != "" {
-			query += " AND u.nickname > $2"
+			query += " AND user_nickname > $2"
 			queryParams = append(queryParams, forumUsers.Since)
 		}
 
-		query += " ORDER BY u.nickname"
+		query += " ORDER BY user_nickname"
 	}
 
 	if forumUsers.Limit != "" {
