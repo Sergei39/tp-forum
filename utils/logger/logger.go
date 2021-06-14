@@ -40,13 +40,13 @@ func (entry *EntryLog) AddFuncName(name string) *EntryLog {
 }
 
 func (entry *EntryLog) createMetaInfo(ctx context.Context) []interface{} {
-	requestId := ctx.Value("request_id")
-	if requestId == nil {
-		requestId = defaultRequestId
-	}
+	// requestId := ctx.Value("request_id")
+	// if requestId == nil {
+	// 	requestId = defaultRequestId
+	// }
 
 	metaInfo := make([]interface{}, 0, 2)
-	metaInfo = append(metaInfo, "[id: ", requestId, "] ", entry.level)
+	// metaInfo = append(metaInfo, "[id: ", requestId, "] ", entry.level)
 
 	if entry.funcName != "" {
 		metaInfo = append(metaInfo, " [", entry.funcName, "]")

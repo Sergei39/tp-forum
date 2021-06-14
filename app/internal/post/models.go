@@ -2,16 +2,16 @@ package post
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/forums/app/models"
 	"github.com/forums/utils/response"
-	"github.com/labstack/echo/v4"
 )
 
 type PostHandler interface {
-	GetDetails(c echo.Context) error
-	UpdateDetails(c echo.Context) error
-	CreatePosts(c echo.Context) error
+	GetDetails(w http.ResponseWriter, r *http.Request)
+	UpdateDetails(w http.ResponseWriter, r *http.Request)
+	CreatePosts(w http.ResponseWriter, r *http.Request)
 }
 
 type PostUsecase interface {

@@ -2,19 +2,18 @@ package thread
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/forums/app/models"
 	"github.com/forums/utils/response"
-
-	"github.com/labstack/echo/v4"
 )
 
 type ThreadHandler interface {
-	CreateThread(c echo.Context) error
-	GetDetails(c echo.Context) error
-	UpdateDetails(c echo.Context) error
-	GetPosts(c echo.Context) error
-	Vote(c echo.Context) error
+	CreateThread(w http.ResponseWriter, r *http.Request)
+	GetDetails(w http.ResponseWriter, r *http.Request)
+	UpdateDetails(w http.ResponseWriter, r *http.Request)
+	GetPosts(w http.ResponseWriter, r *http.Request)
+	Vote(w http.ResponseWriter, r *http.Request)
 }
 
 type ThreadUsecase interface {

@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -8,7 +9,7 @@ import (
 	"github.com/forums/app/models"
 	"github.com/forums/utils/errors"
 	"github.com/forums/utils/logger"
-	"github.com/labstack/echo/v4"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -21,49 +22,57 @@ func NewForumHandler(usecase forumModel.ForumUsecase) forumModel.ForumHandler {
 	}
 }
 
-func (h *Handler) CreateForum(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	newForum := new(models.Forum)
-	if err := c.Bind(newForum); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&newForum)
+	if err != nil {
 		sendErr := errors.New(http.StatusBadRequest, err.Error())
 		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
+		w.WriteHeader(sendErr.Code())
+		return
 	}
+	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newForum})
 
 	response, err := h.forumUsecase.CreateForum(ctx, *newForum)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	logger.Delivery().Debug(ctx, logger.Fields{"response": response})
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
 
-func (h *Handler) GetDetails(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-	slug := c.Param("slug")
+	vars := mux.Vars(r)
+	slug := vars["slug"]
 	logger.Delivery().Info(ctx, logger.Fields{"request data": slug})
 
 	response, err := h.forumUsecase.GetForumBySlug(ctx, slug)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
 
-func (h *Handler) GetUsers(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	forumUsers := new(models.ForumUsers)
-	forumUsers.Slug = c.Param("slug")
-	forumUsers.Limit = c.QueryParam("limit")
 
-	forumUsers.Since = c.QueryParam("since")
-	desc := c.QueryParam("desc")
+	vars := mux.Vars(r)
+	forumUsers.Slug = vars["slug"]
+	forumUsers.Limit = r.URL.Query().Get("limit")
+
+	forumUsers.Since = r.URL.Query().Get("since")
+	desc := r.URL.Query().Get("desc")
 	if desc == "false" || desc == "" {
 		forumUsers.Desc = false
 	} else {
@@ -74,32 +83,35 @@ func (h *Handler) GetUsers(c echo.Context) error {
 
 	response, err := h.forumUsecase.GetUsers(ctx, *forumUsers)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
 
-func (h *Handler) GetThreads(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) GetThreads(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	forumThreads := new(models.ForumThreads)
 
-	forumThreads.Slug = c.Param("slug")
-	limit := c.QueryParam("limit")
+	vars := mux.Vars(r)
+	forumThreads.Slug = vars["slug"]
+	limit := r.URL.Query().Get("limit")
 	if limit != "" {
 		limitConv, err := strconv.Atoi(limit)
 		if err != nil {
 			sendErr := errors.New(http.StatusBadRequest, "convert request data - limit")
 			logger.Delivery().Error(ctx, sendErr)
-			return c.NoContent(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		forumThreads.Limit = limitConv
 	}
 
-	forumThreads.Since = c.QueryParam("since")
-	desc := c.QueryParam("desc")
+	forumThreads.Since = r.URL.Query().Get("since")
+	desc := r.URL.Query().Get("desc")
 	if desc == "false" || desc == "" {
 		forumThreads.Desc = false
 	} else {
@@ -110,8 +122,9 @@ func (h *Handler) GetThreads(c echo.Context) error {
 
 	response, err := h.forumUsecase.GetThreads(ctx, *forumThreads)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }

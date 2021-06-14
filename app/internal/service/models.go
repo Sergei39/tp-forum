@@ -2,15 +2,15 @@ package service
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/forums/app/models"
 	"github.com/forums/utils/response"
-	"github.com/labstack/echo/v4"
 )
 
 type ServiceHandler interface {
-	ClearDb(c echo.Context) error
-	StatusDb(c echo.Context) error
+	ClearDb(w http.ResponseWriter, r *http.Request)
+	StatusDb(w http.ResponseWriter, r *http.Request)
 }
 
 type ServiceUsecase interface {

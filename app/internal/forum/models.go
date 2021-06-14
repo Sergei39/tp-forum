@@ -2,17 +2,17 @@ package forum
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/forums/app/models"
 	"github.com/forums/utils/response"
-	"github.com/labstack/echo/v4"
 )
 
 type ForumHandler interface {
-	CreateForum(c echo.Context) error
-	GetDetails(c echo.Context) error
-	GetUsers(c echo.Context) error
-	GetThreads(c echo.Context) error
+	CreateForum(w http.ResponseWriter, r *http.Request)
+	GetDetails(w http.ResponseWriter, r *http.Request)
+	GetUsers(w http.ResponseWriter, r *http.Request)
+	GetThreads(w http.ResponseWriter, r *http.Request)
 }
 
 type ForumUsecase interface {

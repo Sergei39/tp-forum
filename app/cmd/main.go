@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"fmt"
+	"net/http"
 
-	"github.com/labstack/echo/v4"
+	custMiddleware "github.com/forums/app/middleware"
 
 	"github.com/forums/app/config"
 	forumModels "github.com/forums/app/internal/forum"
@@ -12,7 +13,6 @@ import (
 	serviceModels "github.com/forums/app/internal/service"
 	threadModels "github.com/forums/app/internal/thread"
 	userModels "github.com/forums/app/internal/user"
-	custMiddleware "github.com/forums/app/middleware"
 	"github.com/forums/utils/logger"
 
 	forumRepository "github.com/forums/app/internal/forum/repository"
@@ -33,11 +33,11 @@ import (
 	threadDelivery "github.com/forums/app/internal/thread/delivery"
 	userDelivery "github.com/forums/app/internal/user/delivery"
 
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx"
 )
 
 type Handler struct {
-	echo    *echo.Echo
 	user    userModels.UserHandler
 	forum   forumModels.ForumHandler
 	post    postModels.PostHandler
@@ -45,42 +45,42 @@ type Handler struct {
 	thread  threadModels.ThreadHandler
 }
 
-func router(h Handler) {
-	apiGroup := h.echo.Group("/api")
-	userGroup := apiGroup.Group("/user")
-	userGroup.POST("/:nickname/create", h.user.CreateUser)
-	userGroup.GET("/:nickname/profile", h.user.GetUser)
-	userGroup.POST("/:nickname/profile", h.user.UpdateUser)
+func newRouter(h Handler) *mux.Router {
+	router := mux.NewRouter()
+	router.Use(custMiddleware.LogMiddleware)
 
-	forumGroup := apiGroup.Group("/forum")
-	forumGroup.POST("/create", h.forum.CreateForum)
-	forumGroup.GET("/:slug/details", h.forum.GetDetails)
-	forumGroup.POST("/:slug/create", h.thread.CreateThread)
-	forumGroup.GET("/:slug/users", h.forum.GetUsers)
-	forumGroup.GET("/:slug/threads", h.forum.GetThreads)
+	user := router.PathPrefix("/api/user").Subrouter()
+	user.HandleFunc("/{nickname}/create", h.user.CreateUser).Methods(http.MethodPost)
+	user.HandleFunc("/{nickname}/profile", h.user.GetUser).Methods(http.MethodGet)
+	user.HandleFunc("/{nickname}/profile", h.user.UpdateUser).Methods(http.MethodPost)
 
-	postGroup := apiGroup.Group("/post")
-	postGroup.GET("/:id/details", h.post.GetDetails)
-	postGroup.POST("/:id/details", h.post.UpdateDetails)
+	forum := router.PathPrefix("/api/forum").Subrouter()
+	forum.HandleFunc("/create", h.forum.CreateForum).Methods(http.MethodPost)
+	forum.HandleFunc("/{slug}/details", h.forum.GetDetails).Methods(http.MethodGet)
+	forum.HandleFunc("/{slug}/create", h.thread.CreateThread).Methods(http.MethodPost)
+	forum.HandleFunc("/{slug}/users", h.forum.GetUsers).Methods(http.MethodGet)
+	forum.HandleFunc("/{slug}/threads", h.forum.GetThreads).Methods(http.MethodGet)
 
-	serviceGroup := apiGroup.Group("/service")
-	serviceGroup.POST("/clear", h.service.ClearDb)
-	serviceGroup.GET("/status", h.service.StatusDb)
+	post := router.PathPrefix("/api/post").Subrouter()
+	post.HandleFunc("/{id}/details", h.post.GetDetails).Methods(http.MethodGet)
+	post.HandleFunc("/{id}/details", h.post.UpdateDetails).Methods(http.MethodPost)
 
-	threadGroup := apiGroup.Group("/thread")
-	threadGroup.POST("/:slug_or_id/create", h.post.CreatePosts)
-	threadGroup.GET("/:slug_or_id/details", h.thread.GetDetails)
-	threadGroup.POST("/:slug_or_id/details", h.thread.UpdateDetails)
-	threadGroup.GET("/:slug_or_id/posts", h.thread.GetPosts)
-	threadGroup.POST("/:slug_or_id/vote", h.thread.Vote)
+	service := router.PathPrefix("/api/service").Subrouter()
+	service.HandleFunc("/clear", h.service.ClearDb).Methods(http.MethodPost)
+	service.HandleFunc("/status", h.service.StatusDb).Methods(http.MethodGet)
+
+	thread := router.PathPrefix("/api/thread").Subrouter()
+	thread.HandleFunc("/{slug_or_id}/create", h.post.CreatePosts).Methods(http.MethodPost)
+	thread.HandleFunc("/{slug_or_id}/details", h.thread.GetDetails).Methods(http.MethodGet)
+	thread.HandleFunc("/{slug_or_id}/details", h.thread.UpdateDetails).Methods(http.MethodPost)
+	thread.HandleFunc("/{slug_or_id}/posts", h.thread.GetPosts).Methods(http.MethodGet)
+	thread.HandleFunc("/{slug_or_id}/vote", h.thread.Vote).Methods(http.MethodPost)
+
+	return router
 }
 
 func main() {
 	logger.InitLogger()
-	ctx := context.Background()
-
-	e := echo.New()
-	e.Use(custMiddleware.LogMiddleware)
 
 	connectionString := "postgres://" + config.DBUser + ":" + config.DBPass +
 		"@localhost/" + config.DBName + "?sslmode=disable"
@@ -123,7 +123,6 @@ func main() {
 	threadHandler := threadDelivery.NewThreadHandler(threadUcase)
 
 	handlers := Handler{
-		echo:    e,
 		user:    userHandler,
 		forum:   forumHandler,
 		post:    postHandler,
@@ -131,7 +130,15 @@ func main() {
 		thread:  threadHandler,
 	}
 
-	router(handlers)
+	router := newRouter(handlers)
 
-	logger.Start().Fatal(ctx, e.Start(":5000"))
+	server := &http.Server{
+		Handler: router,
+		Addr:    ":5000",
+	}
+
+	logger.Start().Error(nil, errors.New("Server starting"))
+	if err := server.ListenAndServe(); err != nil {
+		logger.Start().Error(nil, err)
+	}
 }

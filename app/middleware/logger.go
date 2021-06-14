@@ -1,36 +1,29 @@
 package middleware
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
-
-	"github.com/forums/app/models"
-	"github.com/forums/utils/logger"
-	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
-func LogMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func LogMiddleware(next http.Handler) http.Handler {
 
-	return func(c echo.Context) error {
-		start := time.Now()
-		requestID := fmt.Sprintf("%016x", rand.Int())[:10]
-		c.Set("request_id", requestID)
-		ctx := models.GetContext(c)
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 
-		logger.Middleware().Info(ctx, logger.Fields{
-			"url":           c.Request().URL,
-			"method":        c.Request().Method,
-			"remote_addr":   c.Request().RemoteAddr,
-			"server_status": c.Response().Status,
-		})
+		// start := time.Now()
+		// requestID := fmt.Sprintf("%016x", rand.Int())[:10]
+		// newContext := context.WithValue(req.Context(), "request_id", requestID)
 
-		result := next(c)
+		// logger.Middleware().Info(newContext, logger.Fields{
+		// 	"url":         req.URL,
+		// 	"method":      req.Method,
+		// 	"remote_addr": req.RemoteAddr,
+		// 	// "server_status": req.,
+		// })
 
-		logger.Middleware().Info(ctx, logger.Fields{
-			"work_time": time.Since(start),
-		})
+		next.ServeHTTP(w, req)
 
-		return result
-	}
+		// logger.Middleware().Info(newContext, logger.Fields{
+		// 	"work_time": time.Since(start),
+		// })
+	})
 }

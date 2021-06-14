@@ -1,8 +1,14 @@
 package response
 
+import (
+	"encoding/json"
+	"net/http"
+)
+
 type Response interface {
 	Code() int
 	Body() interface{}
+	SendSuccess(w http.ResponseWriter)
 }
 
 type response struct {
@@ -23,4 +29,14 @@ func New(code int, body interface{}) Response {
 		httpCode: code,
 		body:     body,
 	}
+}
+
+func (r *response) SendSuccess(w http.ResponseWriter) {
+	body, err := json.Marshal(r.body)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(r.httpCode)
+	w.Write(body)
 }

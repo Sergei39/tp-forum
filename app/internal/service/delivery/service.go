@@ -4,8 +4,6 @@ import (
 	"net/http"
 
 	serviceModel "github.com/forums/app/internal/service"
-	"github.com/forums/app/models"
-	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
@@ -18,24 +16,26 @@ func NewServiceHandler(serviceUsecase serviceModel.ServiceUsecase) serviceModel.
 	}
 }
 
-func (h *Handler) ClearDb(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) ClearDb(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	err := h.serviceUsecase.ClearDb(ctx)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.NoContent(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) StatusDb(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) StatusDb(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	response, err := h.serviceUsecase.StatusDb(ctx)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }

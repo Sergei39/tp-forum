@@ -9,7 +9,7 @@ import (
 	"github.com/forums/app/models"
 	"github.com/forums/utils/errors"
 	"github.com/forums/utils/logger"
-	"github.com/labstack/echo/v4"
+	"github.com/gorilla/mux"
 )
 
 type Handler struct {
@@ -22,69 +22,87 @@ func NewPostHandler(postUsecase postModel.PostUsecase) postModel.PostHandler {
 	}
 }
 
-func (h *Handler) CreatePosts(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vars := mux.Vars(r)
 	logger.Delivery().AddFuncName("CreatePosts").InlineDebug(ctx, "request")
 
 	posts := make([]models.Post, 0)
 	// с этим работает при массивах и пустых тоже
-	if err := json.NewDecoder(c.Request().Body).Decode(&posts); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&posts)
+	if err != nil {
 		sendErr := errors.New(http.StatusBadRequest, err.Error())
 		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
+		w.WriteHeader(sendErr.Code())
+		return
 	}
-	slug := c.Param("slug_or_id")
+	defer r.Body.Close()
+	slug := vars["slug_or_id"]
 	logger.Delivery().Info(ctx, logger.Fields{"request data": posts, "slug_or_id": slug})
 
 	response, err := h.postUsecase.CreatePosts(ctx, posts, slug)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
 
-func (h *Handler) GetDetails(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vars := mux.Vars(r)
 
 	related := new(models.RequestPost)
-	related.Related = c.QueryParam("related")
+	related.Related = r.URL.Query().Get("related")
 
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		w.WriteHeader(sendErr.Code())
+		return
 	}
 	related.Id = id
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *related})
 
 	response, err := h.postUsecase.GetDetails(ctx, *related)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
 
-func (h *Handler) UpdateDetails(c echo.Context) error {
-	ctx := models.GetContext(c)
+func (h *Handler) UpdateDetails(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	vars := mux.Vars(r)
 
 	message := new(models.MessagePostRequest)
-	if err := c.Bind(message); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&message)
+	if err != nil {
 		sendErr := errors.New(http.StatusBadRequest, err.Error())
 		logger.Delivery().Error(ctx, sendErr)
-		return c.NoContent(sendErr.Code())
+		w.WriteHeader(sendErr.Code())
+		return
 	}
-	id, err := strconv.Atoi(c.Param("id"))
+	defer r.Body.Close()
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		sendErr := errors.New(http.StatusBadRequest, err.Error())
+		logger.Delivery().Error(ctx, sendErr)
+		w.WriteHeader(sendErr.Code())
+		return
 	}
 	message.Id = id
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *message})
 
 	response, err := h.postUsecase.UpdateMessage(ctx, *message)
 	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	return c.JSON(response.Code(), response.Body())
+	response.SendSuccess(w)
 }
