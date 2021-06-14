@@ -15,14 +15,12 @@ type repo struct {
 	DB    *pgx.ConnPool
 	mutex sync.Mutex
 	cach  map[int]models.Post
-	i     int
 }
 
 func NewPostRepo(db *pgx.ConnPool) postModel.PostRepo {
 	return &repo{
 		DB:   db,
 		cach: make(map[int]models.Post),
-		i:    0,
 	}
 }
 
@@ -112,6 +110,10 @@ func (r *repo) UpdateMessage(ctx context.Context, request models.MessagePostRequ
 		logger.Repo().AddFuncName("UpdateMessage").Error(ctx, err)
 		return err
 	}
+
+	r.mutex.Lock()
+	delete(r.cach, request.Id)
+	r.mutex.Unlock()
 
 	return nil
 }
