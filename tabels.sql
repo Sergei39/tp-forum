@@ -202,6 +202,7 @@ CREATE INDEX IF NOT EXISTS thr_forum ON threads (forum); -- для получе�
 -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
 CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
 CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
-CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- для изменения плана слияния в сортировках tree, tree_parent
-CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- не факт что нужно
+CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- не факт что нужно после изменения схемы запросов
+CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- для изменения плана слияния в сортировках tree, tree_parent
 CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
+CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC); -- тестовый
