@@ -61,9 +61,12 @@ CREATE UNLOGGED TABLE votes (
 );
 
 CREATE UNLOGGED TABLE forums_users (
-    user_create CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL,
+    user_nickname CITEXT REFERENCES users(nickname) ON DELETE CASCADE NOT NULL COLLATE "POSIX",
+    user_fullname TEXT,
+    user_about TEXT,
+    user_email CITEXT,
     forum CITEXT REFERENCES forums(slug) ON DELETE CASCADE NOT NULL,
-    UNIQUE (user_create, forum)
+    UNIQUE (user_nickname, forum)
 );
 
 
@@ -99,8 +102,6 @@ CREATE OR REPLACE FUNCTION insert_post() RETURNS TRIGGER AS
 $insert_post$
 BEGIN
     UPDATE forums SET posts=posts + 1 WHERE forums.slug = NEW.forum;
-    INSERT INTO forums_users (user_create, forum) VALUES (NEW.user_create, NEW.forum)
-    ON CONFLICT DO NOTHING;
     RETURN NEW;
 END
 $insert_post$ LANGUAGE plpgsql;
@@ -115,8 +116,6 @@ CREATE OR REPLACE FUNCTION insert_thread() RETURNS TRIGGER AS
 $insert_thread$
 BEGIN
     UPDATE forums SET threads=threads + 1 WHERE forums.slug = NEW.forum;
-    INSERT INTO forums_users (user_create, forum) VALUES (NEW.user_create, NEW.forum)
-    ON CONFLICT DO NOTHING;
     RETURN NEW;
 END
 $insert_thread$ LANGUAGE plpgsql;
@@ -125,6 +124,39 @@ CREATE TRIGGER insert_thread
 AFTER INSERT ON threads
     FOR EACH ROW EXECUTE PROCEDURE insert_thread();
 
+
+-- функция и триггер при создании ветки и поста, на добавления пользователя в список форума
+CREATE OR REPLACE FUNCTION new_forum_user_added() RETURNS TRIGGER AS
+$new_forum_user_added$
+BEGIN
+    DECLARE
+        nickAuthor citext;
+        fullnameAuthor text;
+        emailAuthor citext;
+        aboutAuthor text;
+    BEGIN
+        SELECT nickname, fullname, about, email
+        FROM users WHERE nickname = NEW.user_create
+        INTO nickAuthor, fullnameAuthor, aboutAuthor, emailAuthor;
+
+        INSERT INTO forums_users(user_fullname, user_about, user_email, user_nickname, forum)
+        VALUES (fullnameAuthor, aboutAuthor, emailAuthor, nickAuthor, new.forum)
+        ON CONFLICT DO NOTHING;
+
+        RETURN NULL;
+    END;
+END;
+$new_forum_user_added$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS new_forum_user_added ON posts;
+CREATE TRIGGER new_forum_user_added
+    AFTER INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE new_forum_user_added();
+
+DROP TRIGGER IF EXISTS new_forum_user_added ON threads;
+CREATE TRIGGER new_forum_user_added
+    AFTER INSERT ON threads
+    FOR EACH ROW EXECUTE PROCEDURE new_forum_user_added();
 
 -- функция и триггер при создании голоса, на увеличение кол-ва голосов в threads
 CREATE OR REPLACE FUNCTION insert_voice() RETURNS TRIGGER AS
@@ -158,7 +190,7 @@ AFTER UPDATE ON votes
 -- index
 CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
 
-CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_create); -- подумать надо ли
+CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_nickname); -- подумать надо ли
 CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- для получения всех юзеров из форума
 
 CREATE INDEX IF NOT EXISTS user_nickname ON users (nickname);
