@@ -4,21 +4,25 @@ import (
 	"context"
 	"net/http"
 
+	postModel "github.com/forums/app/internal/post"
 	serviceModel "github.com/forums/app/internal/service"
 	"github.com/forums/utils/response"
 )
 
 type usecase struct {
 	serviceRepo serviceModel.ServiceRepo
+	postRepo    postModel.PostRepo
 }
 
-func NewServiceUsecase(serviceRepo serviceModel.ServiceRepo) serviceModel.ServiceUsecase {
+func NewServiceUsecase(serviceRepo serviceModel.ServiceRepo, postRepo postModel.PostRepo) serviceModel.ServiceUsecase {
 	return &usecase{
 		serviceRepo: serviceRepo,
+		postRepo:    postRepo,
 	}
 }
 
 func (u *usecase) ClearDb(ctx context.Context) error {
+	u.postRepo.ClearCache()
 	return u.serviceRepo.ClearDb(ctx)
 }
 

@@ -26,4 +26,5 @@ type PostRepo interface {
 	CreatePosts(ctx context.Context, posts []models.Post) ([]models.Post, error)
 	CreateForumsUsers(ctx context.Context, posts []models.Post) error
 	GetPostsThread(ctx context.Context, id int) (int, error)
+	ClearCache()
 }

@@ -112,7 +112,7 @@ func main() {
 
 	userUcase := userUsecase.NewUserUsecase(userRepo)
 	forumUcase := forumUsecase.NewForumUsecase(forumRepo, userRepo)
-	serviceUcase := serviceUsecase.NewServiceUsecase(serviceRepo)
+	serviceUcase := serviceUsecase.NewServiceUsecase(serviceRepo, postRepo)
 	postUcase := postUsecase.NewPostUsecase(postRepo, userRepo, threadRepo, forumRepo)
 	threadUcase := threadUsecase.NewThreadUsecase(threadRepo, userRepo, forumRepo)
 

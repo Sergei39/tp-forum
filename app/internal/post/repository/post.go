@@ -24,6 +24,14 @@ func NewPostRepo(db *pgx.ConnPool) postModel.PostRepo {
 	}
 }
 
+func (r *repo) ClearCache() {
+	r.mutex.Lock()
+	for k := range r.cach {
+		delete(r.cach, k)
+	}
+	r.mutex.Unlock()
+}
+
 func (r *repo) GetPostsThread(ctx context.Context, id int) (int, error) {
 	query :=
 		`
