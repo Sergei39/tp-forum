@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	postModel "github.com/forums/app/internal/post"
 	"github.com/forums/app/models"
@@ -11,12 +12,17 @@ import (
 )
 
 type repo struct {
-	DB *pgx.ConnPool
+	DB    *pgx.ConnPool
+	mutex sync.Mutex
+	cach  map[int]models.Post
+	i     int
 }
 
 func NewPostRepo(db *pgx.ConnPool) postModel.PostRepo {
 	return &repo{
-		DB: db,
+		DB:   db,
+		cach: make(map[int]models.Post),
+		i:    0,
 	}
 }
 
@@ -49,6 +55,14 @@ func (r *repo) GetPostsThread(ctx context.Context, id int) (int, error) {
 
 func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 
+	r.mutex.Lock()
+	if post, ok := r.cach[id]; ok {
+		r.mutex.Unlock()
+		logger.Repo().Info(ctx, logger.Fields{"Post in cache": post})
+		return &post, nil
+	}
+	r.mutex.Unlock()
+
 	query :=
 		`
 		SELECT p.id, p.parent, p.user_create, p.message, 
@@ -79,6 +93,9 @@ func (r *repo) GetPost(ctx context.Context, id int) (*models.Post, error) {
 		return nil, err
 	}
 
+	r.mutex.Lock()
+	r.cach[id] = *post
+	r.mutex.Unlock()
 	logger.Repo().Debug(ctx, logger.Fields{"post": *post})
 	return post, nil
 }
