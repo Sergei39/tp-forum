@@ -207,3 +207,4 @@ CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- н
 CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- для изменения плана слияния в сортировках tree, tree_parent
 CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
 -- небольшой прирост дала, но не факт что это из за погрешности, нужна для поисков, где order by по id desc
+CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
