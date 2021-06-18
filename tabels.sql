@@ -200,8 +200,8 @@ CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug) WHERE slug != '
 CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для получения всех веток из форума
 CREATE INDEX IF NOT EXISTS thr_forum_created on threads (forum, created);
 
-CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id(ТЕСТОВАЯ)
-CREATE INDEX IF NOT EXISTS post_parent on posts (parent); -- (ТЕСТОВАЯ)
+-- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id(ТЕСТОВАЯ)
+-- CREATE INDEX IF NOT EXISTS post_parent on posts (parent); -- (ТЕСТОВАЯ)
 CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
 CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
 CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- не факт что нужно после изменения схемы запросов
