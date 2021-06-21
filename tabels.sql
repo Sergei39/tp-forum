@@ -192,6 +192,7 @@ CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
 
 CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_nickname); -- подумать надо ли
 CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- не факт что нужно после изменения схемы бд
+-- надо
 CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, user_nickname); -- для получения всех юзеров из форума
 
 CREATE INDEX IF NOT EXISTS user_nickname ON users using hash (nickname);
@@ -201,10 +202,14 @@ CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для п
 CREATE INDEX IF NOT EXISTS thr_forum_created on threads (forum, created);
 
 -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
-CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
+-- CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
+-- надо
 CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
+CREATE INDEX IF NOT EXISTS post_thread_tree_desc on posts (thread, tree DESC);
 CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- не факт что нужно после изменения схемы запросов
 CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- для изменения плана слияния в сортировках tree, tree_parent
-CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
+-- CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
+-- надо
 -- небольшой прирост дала, но не факт что это из за погрешности, нужна для поисков, где order by по id desc
 CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
+CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
