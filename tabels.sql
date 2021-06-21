@@ -199,6 +199,7 @@ CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, u
 CREATE INDEX IF NOT EXISTS user_nickname ON users using hash (nickname);
 -- надо
 CREATE INDEX IF NOT EXISTS user_email ON users using hash (email);
+CREATE INDEX IF NOT EXISTS user_all ON users (nickname, fullname, about, email); -- тестовая
 
 CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug) WHERE slug != '';
 CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для получения всех веток из форума
