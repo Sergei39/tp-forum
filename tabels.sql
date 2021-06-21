@@ -190,7 +190,7 @@ AFTER UPDATE ON votes
 -- index
 CREATE INDEX IF NOT EXISTS forum_slug ON forums (slug);
 
-CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_nickname); -- подумать надо ли
+-- CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_nickname); -- подумать надо ли
 CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- не факт что нужно после изменения схемы бд
 -- надо
 CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, user_nickname); -- для получения всех юзеров из форума
