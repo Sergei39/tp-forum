@@ -195,7 +195,10 @@ CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- не ф
 -- надо
 CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, user_nickname); -- для получения всех юзеров из форума
 
+-- надо
 CREATE INDEX IF NOT EXISTS user_nickname ON users using hash (nickname);
+-- надо
+CREATE INDEX IF NOT EXISTS user_email ON users using hash (email);
 
 CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug) WHERE slug != '';
 CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для получения всех веток из форума
@@ -212,4 +215,5 @@ CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree);
 -- надо
 -- небольшой прирост дала, но не факт что это из за погрешности, нужна для поисков, где order by по id desc
 CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
-CREATE INDEX IF NOT EXISTS post_tree on posts (tree);
+CREATE INDEX IF NOT EXISTS post_tree on posts (tree); -- хз нужно или нет
+CREATE INDEX IF NOT EXISTS post_id_root_id on posts (id, root_id); -- для изменения плана в select root_id where id
