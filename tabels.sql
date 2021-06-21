@@ -7,10 +7,6 @@ DROP TABLE threads CASCADE;
 DROP TABLE users CASCADE;
 DROP TABLE forums CASCADE;
 
-
-DROP SEQUENCE post_tree_id;
-CREATE SEQUENCE post_tree_id;
-
 CREATE UNLOGGED TABLE users (
     nickname CITEXT UNIQUE NOT NULL COLLATE "POSIX",
     fullname TEXT,
