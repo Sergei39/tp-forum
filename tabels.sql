@@ -204,16 +204,21 @@ CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug) WHERE slug != '
 CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для получения всех веток из форума
 CREATE INDEX IF NOT EXISTS thr_forum_created on threads (forum, created);
 
--- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
--- CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
--- надо
-CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
-CREATE INDEX IF NOT EXISTS post_thread_tree_desc on posts (thread, tree DESC);
-CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- не факт что нужно после изменения схемы запросов
-CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- для изменения плана слияния в сортировках tree, tree_parent
--- CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
--- надо
--- небольшой прирост дала, но не факт что это из за погрешности, нужна для поисков, где order by по id desc
-CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
-CREATE INDEX IF NOT EXISTS post_tree on posts (tree); -- хз нужно или нет
-CREATE INDEX IF NOT EXISTS post_id_root_id on posts (id, root_id); -- для изменения плана в select root_id where id
+create index idx_posts_thread on posts (thread);
+create index idx_posts_tree on posts (tree);
+create index idx_posts_root_id on posts (root_id);
+create index idx_posts_forum on posts (forum);
+
+-- -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
+-- -- CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
+-- -- надо
+-- CREATE INDEX IF NOT EXISTS post_thread_tree on posts (thread, tree); -- для запроса получения постов при сортировки flat
+-- CREATE INDEX IF NOT EXISTS post_thread_tree_desc on posts (thread, tree DESC);
+-- CREATE INDEX IF NOT EXISTS post_thread_root_id on posts (thread, root_id); -- не факт что нужно после изменения схемы запросов
+-- CREATE INDEX IF NOT EXISTS post_root_id on posts (root_id); -- для изменения плана слияния в сортировках tree, tree_parent
+-- -- CREATE INDEX IF NOT EXISTS post_root_id_desc_tree on posts (root_id DESC, tree); -- parent_tree ускоряет на немного
+-- -- надо
+-- -- небольшой прирост дала, но не факт что это из за погрешности, нужна для поисков, где order by по id desc
+-- CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
+-- CREATE INDEX IF NOT EXISTS post_tree on posts (tree); -- хз нужно или нет
+-- CREATE INDEX IF NOT EXISTS post_id_root_id on posts (id, root_id); -- для изменения плана в select root_id where id

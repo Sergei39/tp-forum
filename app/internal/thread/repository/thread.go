@@ -188,7 +188,7 @@ const selectParentTreeLimitAsc = `
 	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $1 AND p2.parent is NULL
+		WHERE p2.thread = $1 AND p2.tree[2] is NULL
 		ORDER BY p2.id
 		LIMIT $2
 	)
@@ -202,7 +202,7 @@ const selectParentTreeLimitDesc = `
 	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $1 AND p2.parent is NULL
+		WHERE p2.thread = $1 AND p2.tree[2] is NULL
 		ORDER BY p2.id DESC
 		LIMIT $2
 	)
@@ -216,7 +216,8 @@ const selectParentTreeSinceLimitAsc = `
 	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $2)
+		WHERE p2.thread = $1 AND p2.tree[2] is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $2)
+		ORDER BY p2.id
 		LIMIT $3
 	)
 	ORDER BY p.tree
@@ -229,7 +230,7 @@ const selectParentTreeSinceLimitDesc = `
 	WHERE p.root_id IN (
 		SELECT p2.root_id
 		FROM posts p2
-		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $2)
+		WHERE p2.thread = $1 AND p2.tree[2] is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $2)
 		ORDER BY p2.id DESC
 		LIMIT $3
 	)
