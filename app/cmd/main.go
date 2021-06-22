@@ -94,7 +94,7 @@ func main() {
 	db, err := pgx.NewConnPool(
 		pgx.ConnPoolConfig{
 			ConnConfig:     configDB,
-			MaxConnections: 100,
+			MaxConnections: 16,
 			AfterConnect:   nil,
 			AcquireTimeout: 0,
 		})
