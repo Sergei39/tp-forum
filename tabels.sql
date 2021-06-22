@@ -207,8 +207,8 @@ create index idx_posts_thread on posts (thread);
 create index idx_posts_tree on posts (tree);
 create index idx_posts_root_id on posts (root_id);
 create index idx_posts_forum on posts (forum);
--- CREATE INDEX IF NOT EXISTS post_thread_tree2_root_id ON posts (thread, (tree[2]), root_id);
--- CREATE INDEX IF NOT EXISTS post_path2_path ON posts (root_id, tree);
+CREATE INDEX IF NOT EXISTS post_thread_tree2_root_id ON posts (thread, (tree[2]), root_id);
+CREATE INDEX IF NOT EXISTS post_path2_path ON posts (root_id, tree);
 -- CREATE INDEX IF NOT EXISTS post_thread_id ON posts (thread, id);
 
 -- -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
