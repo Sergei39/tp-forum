@@ -201,7 +201,7 @@ CREATE INDEX IF NOT EXISTS user_all ON users (nickname, fullname, about, email);
 CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug);
 -- CREATE INDEX IF NOT EXISTS thr_forum ON threads using hash (forum); -- для получения всех веток из форума
 -- CREATE INDEX IF NOT EXISTS thr_forum_created on threads (forum, created);
-CREATE INDEX IF NOT EXISTS thr_all on threads (forum, created, slug, title, user_create, message, votes); -- тестовая
+CREATE INDEX IF NOT EXISTS thr_all on threads (forum, created, id, slug, title, user_create, message, votes); -- тестовая
 
 create index idx_posts_thread on posts (thread);
 create index idx_posts_tree on posts (tree);
