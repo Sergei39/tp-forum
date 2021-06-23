@@ -207,8 +207,6 @@ create index idx_posts_thread on posts (thread);
 create index idx_posts_tree on posts (tree);
 create index idx_posts_root_id on posts (root_id);
 create index idx_posts_forum on posts (forum);
-CREATE INDEX IF NOT EXISTS post_thread_tree2_root_id ON posts (thread, (tree[2]), root_id);
-CREATE INDEX IF NOT EXISTS post_thread_id_desc on posts (thread, id DESC);
 
 -- -- CREATE INDEX IF NOT EXISTS post_thread on posts (thread); -- подумать нужно ли если есть post_thread_id
 -- -- CREATE INDEX IF NOT EXISTS post_thread_id on posts (thread, id); -- нужно для запросаполучения постов с последующим order by
