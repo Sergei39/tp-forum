@@ -20,7 +20,7 @@ func NewForumRepo(db *pgx.ConnPool) forumModel.ForumRepo {
 	}
 }
 
-func (r *repo) CreateForum(ctx context.Context, forum models.Forum) (id int, err error) {
+func (r *repo) CreateForum(ctx context.Context, forum *models.Forum) (id int, err error) {
 
 	query :=
 		`
@@ -70,7 +70,7 @@ func (r *repo) GetForumBySlug(ctx context.Context, slug string) (*models.Forum, 
 	return forum, nil
 }
 
-func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]models.User, error) {
+func (r *repo) GetUsers(ctx context.Context, forumUsers *models.ForumUsers) (*[]models.User, error) {
 	var queryParams []interface{}
 	query :=
 		`
@@ -128,10 +128,10 @@ func (r *repo) GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]mo
 	}
 
 	logger.Repo().Info(ctx, logger.Fields{"users": users})
-	return users, nil
+	return &users, nil
 }
 
-func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads) ([]models.Thread, error) {
+func (r *repo) GetThreads(ctx context.Context, forumThreads *models.ForumThreads) (*[]models.Thread, error) {
 	// TODO: подумать как здесь можно сделать покрасивее
 	var queryParams []interface{}
 	query :=
@@ -195,5 +195,5 @@ func (r *repo) GetThreads(ctx context.Context, forumThreads models.ForumThreads)
 
 	logger.Repo().AddFuncName("GetThreads").Info(ctx, logger.Fields{"threads": threads})
 
-	return threads, nil
+	return &threads, nil
 }

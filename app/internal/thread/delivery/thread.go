@@ -37,13 +37,13 @@ func (h *Handler) CreateThread(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newThread})
 
-	response, err := h.threadUsecase.CreateThread(ctx, *newThread, slug)
+	response, err := h.threadUsecase.CreateThread(ctx, newThread, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) UpdateDetails(w http.ResponseWriter, r *http.Request) {
@@ -78,13 +78,13 @@ func (h *Handler) UpdateDetails(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newThread})
 
-	response, err := h.threadUsecase.UpdateThread(ctx, *newThread, slugOrId)
+	response, err := h.threadUsecase.UpdateThread(ctx, newThread, slugOrId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetPosts(w http.ResponseWriter, r *http.Request) {
@@ -107,13 +107,13 @@ func (h *Handler) GetPosts(w http.ResponseWriter, r *http.Request) {
 
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *threadPosts})
 
-	response, err := h.threadUsecase.GetPosts(ctx, *threadPosts)
+	response, err := h.threadUsecase.GetPosts(ctx, threadPosts)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
@@ -132,11 +132,11 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *vote})
 
-	response, err := h.threadUsecase.AddVote(ctx, *vote, slugOrId)
+	response, err := h.threadUsecase.AddVote(ctx, vote, slugOrId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }

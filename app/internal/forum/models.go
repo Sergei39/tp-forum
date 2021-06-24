@@ -16,15 +16,15 @@ type ForumHandler interface {
 }
 
 type ForumUsecase interface {
-	CreateForum(ctx context.Context, forum models.Forum) (response.Response, error)
-	GetUsers(ctx context.Context, forumUsers models.ForumUsers) (response.Response, error)
-	GetThreads(ctx context.Context, forumThreads models.ForumThreads) (response.Response, error)
-	GetForumBySlug(ctx context.Context, slug string) (response.Response, error)
+	CreateForum(ctx context.Context, forum *models.Forum) (*response.Response, error)
+	GetUsers(ctx context.Context, forumUsers *models.ForumUsers) (*response.Response, error)
+	GetThreads(ctx context.Context, forumThreads *models.ForumThreads) (*response.Response, error)
+	GetForumBySlug(ctx context.Context, slug string) (*response.Response, error)
 }
 
 type ForumRepo interface {
-	CreateForum(ctx context.Context, forum models.Forum) (int, error)
+	CreateForum(ctx context.Context, forum *models.Forum) (int, error)
 	GetForumBySlug(ctx context.Context, title string) (*models.Forum, error)
-	GetUsers(ctx context.Context, forumUsers models.ForumUsers) ([]models.User, error)
-	GetThreads(ctx context.Context, forumThreads models.ForumThreads) ([]models.Thread, error)
+	GetUsers(ctx context.Context, forumUsers *models.ForumUsers) (*[]models.User, error)
+	GetThreads(ctx context.Context, forumThreads *models.ForumThreads) (*[]models.Thread, error)
 }

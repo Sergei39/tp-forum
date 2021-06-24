@@ -19,7 +19,7 @@ func NewUserRepo(db *pgx.ConnPool) userModel.UserRepo {
 	}
 }
 
-func (r *repo) GetUserByNameAndEmail(ctx context.Context, name, email string) ([]models.User, error) {
+func (r *repo) GetUserByNameAndEmail(ctx context.Context, name, email string) (*[]models.User, error) {
 
 	logger.Repo().Debug(ctx, logger.Fields{"name, email": name})
 	query :=
@@ -57,7 +57,7 @@ func (r *repo) GetUserByNameAndEmail(ctx context.Context, name, email string) ([
 	}
 
 	logger.Repo().Info(ctx, logger.Fields{"users": users})
-	return users, nil
+	return &users, nil
 }
 
 func (r *repo) GetUserByName(ctx context.Context, name string) (*models.User, error) {
@@ -116,7 +116,7 @@ func (r *repo) GetUserByEmail(ctx context.Context, email string) (*models.User, 
 	return user, nil
 }
 
-func (r *repo) CreateUser(ctx context.Context, user models.User) (err error) {
+func (r *repo) CreateUser(ctx context.Context, user *models.User) (err error) {
 
 	query :=
 		`
@@ -138,7 +138,7 @@ func (r *repo) CreateUser(ctx context.Context, user models.User) (err error) {
 	return nil
 }
 
-func (r *repo) UpdateUser(ctx context.Context, user models.User) (id int, err error) {
+func (r *repo) UpdateUser(ctx context.Context, user *models.User) (id int, err error) {
 
 	query :=
 		`

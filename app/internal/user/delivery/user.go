@@ -39,13 +39,13 @@ func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	newUser.Nickname = nickname
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newUser})
 
-	response, err := h.userUsecase.CreateUser(ctx, *newUser)
+	response, err := h.userUsecase.CreateUser(ctx, newUser)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +61,7 @@ func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -82,11 +82,11 @@ func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	newUser.Nickname = nickname
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newUser})
 
-	response, err := h.userUsecase.UpdateUser(ctx, *newUser)
+	response, err := h.userUsecase.UpdateUser(ctx, newUser)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }

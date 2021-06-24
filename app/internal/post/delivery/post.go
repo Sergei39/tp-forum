@@ -40,13 +40,13 @@ func (h *Handler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 	slug := vars["slug_or_id"]
 	logger.Delivery().Info(ctx, logger.Fields{"request data": posts, "slug_or_id": slug})
 
-	response, err := h.postUsecase.CreatePosts(ctx, posts, slug)
+	response, err := h.postUsecase.CreatePosts(ctx, &posts, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
@@ -66,13 +66,13 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 	related.Id = id
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *related})
 
-	response, err := h.postUsecase.GetDetails(ctx, *related)
+	response, err := h.postUsecase.GetDetails(ctx, related)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) UpdateDetails(w http.ResponseWriter, r *http.Request) {
@@ -98,11 +98,11 @@ func (h *Handler) UpdateDetails(w http.ResponseWriter, r *http.Request) {
 	message.Id = id
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *message})
 
-	response, err := h.postUsecase.UpdateMessage(ctx, *message)
+	response, err := h.postUsecase.UpdateMessage(ctx, message)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }

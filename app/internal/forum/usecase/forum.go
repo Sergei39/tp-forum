@@ -22,7 +22,7 @@ func NewForumUsecase(forumRepo forumModel.ForumRepo, userRepo userModel.UserRepo
 	}
 }
 
-func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response.Response, error) {
+func (u *usecase) CreateForum(ctx context.Context, forum *models.Forum) (*response.Response, error) {
 
 	forumDb, err := u.forumRepo.GetForumBySlug(ctx, forum.Slug)
 	if err != nil {
@@ -30,7 +30,7 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 	}
 	if forumDb != nil {
 		response := response.New(http.StatusConflict, forumDb)
-		return response, nil
+		return &response, nil
 	}
 
 	user, err := u.userRepo.GetUserByName(ctx, forum.User)
@@ -39,7 +39,7 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 			Message: "Can't find user with id #" + forum.User + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	forum.User = user.Nickname
@@ -49,10 +49,10 @@ func (u *usecase) CreateForum(ctx context.Context, forum models.Forum) (response
 	}
 
 	response := response.New(http.StatusCreated, forum)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) GetForumBySlug(ctx context.Context, slug string) (response.Response, error) {
+func (u *usecase) GetForumBySlug(ctx context.Context, slug string) (*response.Response, error) {
 
 	forum, err := u.forumRepo.GetForumBySlug(ctx, slug)
 	if err != nil {
@@ -63,14 +63,14 @@ func (u *usecase) GetForumBySlug(ctx context.Context, slug string) (response.Res
 			Message: "Can't find forum with id #" + slug + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	response := response.New(http.StatusOK, forum)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) GetUsers(ctx context.Context, forumUsers models.ForumUsers) (response.Response, error) {
+func (u *usecase) GetUsers(ctx context.Context, forumUsers *models.ForumUsers) (*response.Response, error) {
 	forum, err := u.forumRepo.GetForumBySlug(ctx, forumUsers.Slug)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (u *usecase) GetUsers(ctx context.Context, forumUsers models.ForumUsers) (r
 			Message: "Can't find forum with id #" + forumUsers.Slug + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	users, err := u.forumRepo.GetUsers(ctx, forumUsers)
@@ -90,10 +90,10 @@ func (u *usecase) GetUsers(ctx context.Context, forumUsers models.ForumUsers) (r
 	}
 
 	response := response.New(http.StatusOK, users)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) GetThreads(ctx context.Context, forumThreads models.ForumThreads) (response.Response, error) {
+func (u *usecase) GetThreads(ctx context.Context, forumThreads *models.ForumThreads) (*response.Response, error) {
 	forum, err := u.forumRepo.GetForumBySlug(ctx, forumThreads.Slug)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (u *usecase) GetThreads(ctx context.Context, forumThreads models.ForumThrea
 			Message: "Can't find forum with id #" + forumThreads.Slug + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	threads, err := u.forumRepo.GetThreads(ctx, forumThreads)
@@ -113,5 +113,5 @@ func (u *usecase) GetThreads(ctx context.Context, forumThreads models.ForumThrea
 	}
 
 	response := response.New(http.StatusOK, threads)
-	return response, nil
+	return &response, nil
 }

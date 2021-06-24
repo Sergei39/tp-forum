@@ -19,14 +19,14 @@ func NewUserUsecase(userRepo userModel.UserRepo) userModel.UserUsecase {
 	}
 }
 
-func (u *usecase) CreateUser(ctx context.Context, user models.User) (response.Response, error) {
+func (u *usecase) CreateUser(ctx context.Context, user *models.User) (*response.Response, error) {
 	users, err := u.userRepo.GetUserByNameAndEmail(ctx, user.Nickname, user.Email)
 	if err != nil {
 		return nil, err
 	}
-	if len(users) != 0 {
+	if len(*users) != 0 {
 		response := response.New(http.StatusConflict, users)
-		return response, nil
+		return &response, nil
 	}
 
 	err = u.userRepo.CreateUser(ctx, user)
@@ -35,10 +35,10 @@ func (u *usecase) CreateUser(ctx context.Context, user models.User) (response.Re
 	}
 
 	response := response.New(http.StatusCreated, user)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) GetUserByName(ctx context.Context, name string) (response.Response, error) {
+func (u *usecase) GetUserByName(ctx context.Context, name string) (*response.Response, error) {
 
 	user, err := u.userRepo.GetUserByName(ctx, name)
 	if err != nil {
@@ -49,14 +49,14 @@ func (u *usecase) GetUserByName(ctx context.Context, name string) (response.Resp
 			Message: "Can't find user with id #" + name + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	response := response.New(http.StatusOK, user)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) fixData(newUser models.User, oldUser models.User) models.User {
+func (u *usecase) fixData(newUser *models.User, oldUser *models.User) *models.User {
 	if newUser.About == "" {
 		newUser.About = oldUser.About
 	}
@@ -72,7 +72,7 @@ func (u *usecase) fixData(newUser models.User, oldUser models.User) models.User 
 	return newUser
 }
 
-func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Response, error) {
+func (u *usecase) UpdateUser(ctx context.Context, user *models.User) (*response.Response, error) {
 
 	userDb, err := u.userRepo.GetUserByName(ctx, user.Nickname)
 	if err != nil {
@@ -83,10 +83,10 @@ func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Re
 			Message: "Can't find user with id #" + user.Nickname + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
-	user = u.fixData(user, *userDb)
+	user = u.fixData(user, userDb)
 
 	userDb, err = u.userRepo.GetUserByEmail(ctx, user.Email)
 	if err != nil {
@@ -94,7 +94,7 @@ func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Re
 	}
 	if userDb != nil && userDb.Nickname != user.Nickname {
 		response := response.New(http.StatusConflict, userDb)
-		return response, nil
+		return &response, nil
 	}
 
 	_, err = u.userRepo.UpdateUser(ctx, user)
@@ -103,5 +103,5 @@ func (u *usecase) UpdateUser(ctx context.Context, user models.User) (response.Re
 	}
 
 	response := response.New(http.StatusOK, user)
-	return response, nil
+	return &response, nil
 }

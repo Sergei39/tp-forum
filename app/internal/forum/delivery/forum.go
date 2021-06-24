@@ -36,14 +36,14 @@ func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newForum})
 
-	response, err := h.forumUsecase.CreateForum(ctx, *newForum)
+	response, err := h.forumUsecase.CreateForum(ctx, newForum)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	logger.Delivery().Debug(ctx, logger.Fields{"response": response})
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +59,7 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -81,13 +81,13 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumUsers})
 
-	response, err := h.forumUsecase.GetUsers(ctx, *forumUsers)
+	response, err := h.forumUsecase.GetUsers(ctx, forumUsers)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }
 
 func (h *Handler) GetThreads(w http.ResponseWriter, r *http.Request) {
@@ -120,11 +120,11 @@ func (h *Handler) GetThreads(w http.ResponseWriter, r *http.Request) {
 
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumThreads})
 
-	response, err := h.forumUsecase.GetThreads(ctx, *forumThreads)
+	response, err := h.forumUsecase.GetThreads(ctx, forumThreads)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	response.SendSuccess(w)
+	(*response).SendSuccess(w)
 }

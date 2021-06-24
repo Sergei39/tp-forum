@@ -35,7 +35,7 @@ func NewPostUsecase(postRepo postModel.PostRepo, userRepo userModel.UserRepo,
 	}
 }
 
-func (u *usecase) GetDetails(ctx context.Context, request models.RequestPost) (response.Response, error) {
+func (u *usecase) GetDetails(ctx context.Context, request *models.RequestPost) (*response.Response, error) {
 	// TODO: подумать надо оптимизацией, получениявсех данных одним запросом
 	post, err := u.postRepo.GetPost(ctx, request.Id)
 	if err != nil {
@@ -46,7 +46,7 @@ func (u *usecase) GetDetails(ctx context.Context, request models.RequestPost) (r
 			Message: "Can't find post with id #" + strconv.Itoa(request.Id) + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	infoPost := models.InfoPost{
@@ -81,10 +81,10 @@ func (u *usecase) GetDetails(ctx context.Context, request models.RequestPost) (r
 	}
 
 	response := response.New(http.StatusOK, infoPost)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostRequest) (response.Response, error) {
+func (u *usecase) UpdateMessage(ctx context.Context, request *models.MessagePostRequest) (*response.Response, error) {
 	post, err := u.postRepo.GetPost(ctx, request.Id)
 	if err != nil {
 		return nil, err
@@ -94,12 +94,12 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 			Message: "Can't find post with id #" + strconv.Itoa(request.Id) + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
 	if post.Message == request.Message || request.Message == "" {
 		response := response.New(http.StatusOK, post)
-		return response, nil
+		return &response, nil
 	}
 
 	post.Message = request.Message
@@ -111,10 +111,10 @@ func (u *usecase) UpdateMessage(ctx context.Context, request models.MessagePostR
 	}
 
 	response := response.New(http.StatusOK, post)
-	return response, nil
+	return &response, nil
 }
 
-func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId string) (response.Response, error) {
+func (u *usecase) CreatePosts(ctx context.Context, posts *[]models.Post, slugOrId string) (*response.Response, error) {
 	timeNow := time.Now()
 
 	thread, err := u.threadRepo.GetThreadBySlugOrId(ctx, slugOrId)
@@ -126,19 +126,19 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 			Message: "Can't find thread with id #" + slugOrId + "\n",
 		}
 		response := response.New(http.StatusNotFound, message)
-		return response, nil
+		return &response, nil
 	}
 
-	if len(posts) == 0 {
+	if len(*posts) == 0 {
 		response := response.New(http.StatusCreated, posts)
-		return response, nil
+		return &response, nil
 	}
 
 	logger.Usecase().Debug(ctx, logger.Fields{"forum slug": thread.Forum})
-	for i := range posts {
-		posts[i].Thread = thread.Id
-		posts[i].Forum = thread.Forum
-		posts[i].Created = timeNow
+	for i := range *posts {
+		(*posts)[i].Thread = thread.Id
+		(*posts)[i].Forum = thread.Forum
+		(*posts)[i].Created = timeNow
 	}
 
 	postsDB, err := u.postRepo.CreatePosts(ctx, posts)
@@ -152,7 +152,7 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 					Message: "Can't find user\n",
 				}
 				response := response.New(http.StatusNotFound, message)
-				return response, nil
+				return &response, nil
 
 			case "12345":
 				{
@@ -160,7 +160,7 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 						Message: "Parent not found\n",
 					}
 					response := response.New(http.StatusConflict, message)
-					return response, nil
+					return &response, nil
 				}
 
 			default:
@@ -177,5 +177,5 @@ func (u *usecase) CreatePosts(ctx context.Context, posts []models.Post, slugOrId
 	// }
 
 	response := response.New(http.StatusCreated, postsDB)
-	return response, nil
+	return &response, nil
 }
