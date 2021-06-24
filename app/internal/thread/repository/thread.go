@@ -21,7 +21,7 @@ func NewThreadRepo(db *pgx.ConnPool) threadModel.ThreadRepo {
 	}
 }
 
-func (r *repo) CreateThread(ctx context.Context, thread models.Thread) (id int, err error) {
+func (r *repo) CreateThread(ctx context.Context, thread *models.Thread) (id int, err error) {
 	var query string
 	var queryParams []interface{}
 
@@ -97,7 +97,7 @@ func (r *repo) GetThreadBySlugOrId(ctx context.Context, slugOrId string) (*model
 	return thread, nil
 }
 
-func (r *repo) UpdateThreadBySlug(ctx context.Context, thread models.Thread) error {
+func (r *repo) UpdateThreadBySlug(ctx context.Context, thread *models.Thread) error {
 	query :=
 		`
 		UPDATE threads SET title = $1, message = $2
@@ -113,7 +113,7 @@ func (r *repo) UpdateThreadBySlug(ctx context.Context, thread models.Thread) err
 	return nil
 }
 
-func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
+func (r *repo) UpdateVote(ctx context.Context, vote *models.Vote) error {
 	query :=
 		`
 		UPDATE votes SET voice = $1
@@ -129,7 +129,7 @@ func (r *repo) UpdateVote(ctx context.Context, vote models.Vote) error {
 	return nil
 }
 
-func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
+func (r *repo) AddVote(ctx context.Context, vote *models.Vote) error {
 	id := new(int)
 
 	query :=
@@ -147,7 +147,7 @@ func (r *repo) AddVote(ctx context.Context, vote models.Vote) error {
 	return nil
 }
 
-func (r *repo) treeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
+func (r *repo) treeSort(ctx context.Context, threadPosts *models.ThreadPosts) (string, []interface{}) {
 	var queryParams []interface{}
 	query :=
 		`
@@ -186,7 +186,7 @@ const selectParentTreeLimitAsc = `
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
 	WHERE p.root_id IN (
-		SELECT p2.root_id
+		SELECT p2.id
 		FROM posts p2
 		WHERE p2.thread = $1 AND p2.parent is NULL
 		ORDER BY p2.id
@@ -200,7 +200,7 @@ const selectParentTreeLimitDesc = `
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
 	WHERE p.root_id IN (
-		SELECT p2.root_id
+		SELECT p2.id
 		FROM posts p2
 		WHERE p2.thread = $1 AND p2.parent is NULL
 		ORDER BY p2.id DESC
@@ -214,7 +214,7 @@ const selectParentTreeSinceLimitAsc = `
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
 	WHERE p.root_id IN (
-		SELECT p2.root_id
+		SELECT p2.id
 		FROM posts p2
 		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id > (SELECT p3.root_id from posts p3 where p3.id = $2)
 		ORDER BY p2.id
@@ -228,7 +228,7 @@ const selectParentTreeSinceLimitDesc = `
 	p.is_edited, p.forum, p.thread, p.created
 	FROM posts as p
 	WHERE p.root_id IN (
-		SELECT p2.root_id
+		SELECT p2.id
 		FROM posts p2
 		WHERE p2.thread = $1 AND p2.parent is NULL AND p2.root_id < (SELECT p3.root_id from posts p3 where p3.id = $2)
 		ORDER BY p2.id DESC
@@ -269,7 +269,7 @@ const selectParentTreeSinceDesc = `
 	ORDER BY p.root_id DESC, p.tree ASC
 `
 
-func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
+func (r *repo) parentTreeSort(ctx context.Context, threadPosts *models.ThreadPosts) (string, []interface{}) {
 	var queryParams []interface{}
 	var query string
 
@@ -314,7 +314,7 @@ func (r *repo) parentTreeSort(ctx context.Context, threadPosts models.ThreadPost
 	return query, queryParams
 }
 
-func (r *repo) flatSort(ctx context.Context, threadPosts models.ThreadPosts) (string, []interface{}) {
+func (r *repo) flatSort(ctx context.Context, threadPosts *models.ThreadPosts) (string, []interface{}) {
 	var queryParams []interface{}
 	query :=
 		`
@@ -348,9 +348,9 @@ func (r *repo) flatSort(ctx context.Context, threadPosts models.ThreadPosts) (st
 	return query, queryParams
 }
 
-func (r *repo) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]models.Post, error) {
+func (r *repo) GetPosts(ctx context.Context, threadPosts *models.ThreadPosts) (*[]models.Post, error) {
 	// TODO: подумать как здесь можно сделать покрасивее
-	var queryParams []interface{}
+	queryParams := make([]interface{}, 0)
 	var query string
 
 	queryParams = append(queryParams, threadPosts.ThreadId)
@@ -399,5 +399,5 @@ func (r *repo) GetPosts(ctx context.Context, threadPosts models.ThreadPosts) ([]
 		posts = append(posts, *post)
 	}
 
-	return posts, nil
+	return &posts, nil
 }
