@@ -21,11 +21,7 @@ import (
 	threadRepository "github.com/forums/app/internal/thread/repository"
 	userRepository "github.com/forums/app/internal/user/repository"
 
-	forumUsecase "github.com/forums/app/internal/forum/usecase"
-	postUsecase "github.com/forums/app/internal/post/usecase"
 	serviceUsecase "github.com/forums/app/internal/service/usecase"
-	threadUsecase "github.com/forums/app/internal/thread/usecase"
-	userUsecase "github.com/forums/app/internal/user/usecase"
 
 	forumDelivery "github.com/forums/app/internal/forum/delivery"
 	postDelivery "github.com/forums/app/internal/post/delivery"
@@ -110,17 +106,13 @@ func main() {
 	postRepo := postRepository.NewPostRepo(db)
 	threadRepo := threadRepository.NewThreadRepo(db)
 
-	userUcase := userUsecase.NewUserUsecase(userRepo)
-	forumUcase := forumUsecase.NewForumUsecase(forumRepo, userRepo)
 	serviceUcase := serviceUsecase.NewServiceUsecase(serviceRepo, postRepo)
-	postUcase := postUsecase.NewPostUsecase(postRepo, userRepo, threadRepo, forumRepo)
-	threadUcase := threadUsecase.NewThreadUsecase(threadRepo, userRepo, forumRepo)
 
-	userHandler := userDelivery.NewUserHandler(userUcase)
-	forumHandler := forumDelivery.NewForumHandler(forumUcase)
-	postHandler := postDelivery.NewPostHandler(postUcase)
+	userHandler := userDelivery.NewUserHandler(userRepo)
+	forumHandler := forumDelivery.NewForumHandler(forumRepo, userRepo)
+	postHandler := postDelivery.NewPostHandler(postRepo, userRepo, threadRepo, forumRepo)
 	serviceHandler := serviceDelivery.NewServiceHandler(serviceUcase)
-	threadHandler := threadDelivery.NewThreadHandler(threadUcase)
+	threadHandler := threadDelivery.NewThreadHandler(threadRepo, userRepo, forumRepo)
 
 	handlers := Handler{
 		user:    userHandler,

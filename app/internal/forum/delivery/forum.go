@@ -6,19 +6,23 @@ import (
 	"strconv"
 
 	forumModel "github.com/forums/app/internal/forum"
+	userModel "github.com/forums/app/internal/user"
 	"github.com/forums/app/models"
 	"github.com/forums/utils/errors"
 	"github.com/forums/utils/logger"
+	"github.com/forums/utils/response"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	forumUsecase forumModel.ForumUsecase
+	forumRepo forumModel.ForumRepo
+	userRepo  userModel.UserRepo
 }
 
-func NewForumHandler(usecase forumModel.ForumUsecase) forumModel.ForumHandler {
+func NewForumHandler(forumRepo forumModel.ForumRepo, userRepo userModel.UserRepo) forumModel.ForumHandler {
 	return &Handler{
-		forumUsecase: usecase,
+		forumRepo: forumRepo,
+		userRepo:  userRepo,
 	}
 }
 
@@ -28,22 +32,39 @@ func (h *Handler) CreateForum(w http.ResponseWriter, r *http.Request) {
 	newForum := new(models.Forum)
 	err := json.NewDecoder(r.Body).Decode(&newForum)
 	if err != nil {
-		sendErr := errors.New(http.StatusBadRequest, err.Error())
-		logger.Delivery().Error(ctx, sendErr)
-		w.WriteHeader(sendErr.Code())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *newForum})
 
-	response, err := h.forumUsecase.CreateForum(ctx, newForum)
+	forumDb, err := h.forumRepo.GetForumBySlug(ctx, newForum.Slug)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if forumDb != nil {
+		response.New(http.StatusConflict, forumDb).SendSuccess(w)
+		return
+	}
+
+	user, err := h.userRepo.GetUserByName(ctx, newForum.User)
+	if err == nil && user == nil {
+		message := models.Message{
+			Message: "Can't find user with id #" + newForum.User + "\n",
+		}
+		response.New(http.StatusNotFound, message).SendSuccess(w)
+		return
+	}
+
+	newForum.User = user.Nickname
+	_, err = h.forumRepo.CreateForum(ctx, newForum)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	logger.Delivery().Debug(ctx, logger.Fields{"response": response})
-	(*response).SendSuccess(w)
+	response.New(http.StatusCreated, newForum).SendSuccess(w)
 }
 
 func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
@@ -53,13 +74,20 @@ func (h *Handler) GetDetails(w http.ResponseWriter, r *http.Request) {
 	slug := vars["slug"]
 	logger.Delivery().Info(ctx, logger.Fields{"request data": slug})
 
-	response, err := h.forumUsecase.GetForumBySlug(ctx, slug)
+	forum, err := h.forumRepo.GetForumBySlug(ctx, slug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if forum == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + slug + "\n",
+		}
+		response.New(http.StatusNotFound, message).SendSuccess(w)
+		return
+	}
 
-	(*response).SendSuccess(w)
+	response.New(http.StatusOK, forum).SendSuccess(w)
 }
 
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -81,13 +109,27 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumUsers})
 
-	response, err := h.forumUsecase.GetUsers(ctx, forumUsers)
+	forum, err := h.forumRepo.GetForumBySlug(ctx, forumUsers.Slug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	(*response).SendSuccess(w)
+	if forum == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + forumUsers.Slug + "\n",
+		}
+		response.New(http.StatusNotFound, message).SendSuccess(w)
+		return
+	}
+
+	users, err := h.forumRepo.GetUsers(ctx, forumUsers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response.New(http.StatusOK, users).SendSuccess(w)
 }
 
 func (h *Handler) GetThreads(w http.ResponseWriter, r *http.Request) {
@@ -120,11 +162,25 @@ func (h *Handler) GetThreads(w http.ResponseWriter, r *http.Request) {
 
 	logger.Delivery().Info(ctx, logger.Fields{"request data": *forumThreads})
 
-	response, err := h.forumUsecase.GetThreads(ctx, forumThreads)
+	forum, err := h.forumRepo.GetForumBySlug(ctx, forumThreads.Slug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	(*response).SendSuccess(w)
+	if forum == nil {
+		message := models.Message{
+			Message: "Can't find forum with id #" + forumThreads.Slug + "\n",
+		}
+		response.New(http.StatusNotFound, message).SendSuccess(w)
+		return
+	}
+
+	threads, err := h.forumRepo.GetThreads(ctx, forumThreads)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response.New(http.StatusOK, threads).SendSuccess(w)
 }

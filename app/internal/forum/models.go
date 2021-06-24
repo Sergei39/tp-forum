@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/forums/app/models"
-	"github.com/forums/utils/response"
 )
 
 type ForumHandler interface {
@@ -13,13 +12,6 @@ type ForumHandler interface {
 	GetDetails(w http.ResponseWriter, r *http.Request)
 	GetUsers(w http.ResponseWriter, r *http.Request)
 	GetThreads(w http.ResponseWriter, r *http.Request)
-}
-
-type ForumUsecase interface {
-	CreateForum(ctx context.Context, forum *models.Forum) (*response.Response, error)
-	GetUsers(ctx context.Context, forumUsers *models.ForumUsers) (*response.Response, error)
-	GetThreads(ctx context.Context, forumThreads *models.ForumThreads) (*response.Response, error)
-	GetForumBySlug(ctx context.Context, slug string) (*response.Response, error)
 }
 
 type ForumRepo interface {
