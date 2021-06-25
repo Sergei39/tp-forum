@@ -189,8 +189,8 @@ CREATE INDEX IF NOT EXISTS forum_slug ON forums using hash (slug);
 -- CREATE INDEX IF NOT EXISTS forums_user_user ON forums_users (user_nickname); -- подумать надо ли
 -- CREATE INDEX IF NOT EXISTS forums_user_forum ON forums_users (forum); -- не факт что нужно после изменения схемы бд
 -- надо
--- CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, user_nickname); -- для получения всех юзеров из форума
-CREATE INDEX forum_users_all on forums_users (forum, user_nickname, user_fullname, user_about, user_email); -- тестовый
+CREATE INDEX IF NOT EXISTS forums_users_forum_nickname on forums_users (forum, user_nickname); -- для получения всех юзеров из форума
+-- CREATE INDEX forum_users_all on forums_users (forum, user_nickname, user_fullname, user_about, user_email); -- тестовый
 
 -- надо
 CREATE INDEX IF NOT EXISTS user_nickname ON users using hash (nickname);
@@ -205,7 +205,7 @@ CREATE INDEX IF NOT EXISTS thr_slug ON threads using hash (slug);
 CREATE INDEX IF NOT EXISTS thr_forum_created on threads (forum, created);
 
 create index idx_posts_thread on posts (thread);
-create index idx_posts_tree on posts (tree);
+create index idx_posts_tree on posts using gin (tree);
 create index idx_posts_root_id on posts (root_id);
 create index idx_posts_forum on posts (forum);
 -- create index idx_posts_thread_tree2_id on posts (thread, (tree[2]), id);
